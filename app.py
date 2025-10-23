@@ -1197,8 +1197,90 @@ def handle_assassin_targets_command(message, client):
         if conn is not None:
              conn.close()
 
+def handle_assassin_remove_command(message, say, client):
+    """Admin command to remove a player from the game."""
+    channel_id = message['channel']
+    admin_id = message['user']
+    text = message.get('text', '')
+
+    # --- ADMIN CHECK ---
+    if admin_id != ADMIN_USER_ID:
+        client.chat_postEphemeral(
+            channel=channel_id,
+            user=admin_id,
+            text="Sorry, only the designated admin can remove a player."
+        )
+        return
+    # --- END ADMIN CHECK ---
+
+    mentioned_users = re.findall(r"<@(\w+)>", text)
+    if not mentioned_users:
+        say("You must mention the player you want to remove.")
+        return
+    player_to_remove_id = mentioned_users[0]
+
+    conn = None
+    cur = None
+    try:
+        conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+        cur = conn.cursor()
+
+        # 1. Get the target of the player being removed (Player Y)
+        cur.execute("SELECT target_id FROM assassin_players WHERE player_id = %s AND channel_id = %s AND is_active = TRUE", (player_to_remove_id, channel_id))
+        removed_player_data = cur.fetchone()
+        if not removed_player_data:
+            say(f"<@{player_to_remove_id}> is not an active player in this game.")
+            return
+        new_target_id = removed_player_data[0] # This is Player Y
+
+        # 2. Find who was targeting the removed player (Player Z)
+        cur.execute("SELECT player_id FROM assassin_players WHERE target_id = %s AND channel_id = %s AND is_active = TRUE", (player_to_remove_id, channel_id))
+        targeter_data = cur.fetchone()
+
+        if not targeter_data:
+             # This should ideally not happen in a circular list unless only 2 players are left?
+             # Or if the targeter was already eliminated. Handle gracefully.
+             print(f"--- WARNING: Could not find active player targeting {player_to_remove_id} in {channel_id}. Healing might be incomplete. ---")
+             # Proceed to remove the player anyway
+        else:
+            targeter_id = targeter_data[0] # This is Player Z
+
+            # 3. Update Player Z's target to Player Y
+            cur.execute("UPDATE assassin_players SET target_id = %s WHERE player_id = %s AND channel_id = %s", (new_target_id, targeter_id, channel_id))
+
+        # 4. Remove Player X from the game
+        cur.execute("DELETE FROM assassin_players WHERE player_id = %s AND channel_id = %s", (player_to_remove_id, channel_id))
+        
+        conn.commit()
+
+        removed_player_name = get_user_name(player_to_remove_id)
+        say(f"Player *{removed_player_name}* has been removed from the game by admin.")
+
+        # 5. Notify Player Z of their new target if they were found
+        if targeter_data:
+            targeter_id = targeter_data[0]
+            new_target_name = get_user_name(new_target_id)
+            try:
+                client.chat_postMessage(
+                    channel=targeter_id,
+                    text=f"Your previous target was removed from the game. Your new target in <#{channel_id}> is: *{new_target_name}*."
+                )
+            except Exception as dm_error:
+                 print(f"🔴 Error sending DM to {targeter_id} about new target: {dm_error}")
+                 say(f"⚠️ Could not DM <@{targeter_id}> about their new target.") # Notify in channel as fallback
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"🔴 Error in assassin_remove_command: {error}")
+        say("Sorry, I encountered an error trying to remove the player.")
+    finally:
+        if cur is not None:
+             cur.close()
+        if conn is not None:
+             conn.close()
+
 def handle_assassin_help_command(message, say):
     """Displays the help message for the Assassin game."""
+    # ... (code is unchanged) ...
     help_text = """
 *Assassin Game Commands:*
 • `assassin target` or `mytarget`: Privately shows you your current target.
@@ -1206,14 +1288,15 @@ def handle_assassin_help_command(message, say):
 • `assassin alive`: Shows a list of players still in the game.
 • `assassin dead`: Shows a list of eliminated players.
 • `assassin killcount`: Displays the top 3 players by number of eliminations.
-_Admin commands (`assassin start`, `assassin end`, `assassin targets`) are restricted._
+_Admin commands (`assassin start`, `assassin end`, `assassin targets`, `assassin remove`) are restricted._
 """
     say(help_text)
 
 def handle_spot_help_command(message, say):
     """Displays the help message for the Spot Bot game."""
+    # ... (code is unchanged) ...
     help_text = """
-*UMBot Commands:*
+*Spot Bot Commands:*
 • `spot @user` or `spotted @user` (with image): Record a spot. Counts for 1 point (or 2 for daily bonus targets!).
 • `spotboard`: Show the seasonal leaderboard of top spotters.
 • `caughtboard`: Show the seasonal leaderboard of most spotted players.
@@ -1224,12 +1307,14 @@ def handle_spot_help_command(message, say):
 • `mystats`: Shows your personal spotting stats in this channel.
 • `explode @user`: Overlays a random explosion on a random spot picture of the mentioned user.
 • `dailybonus`: Shows who the current daily bonus targets are.
+• `help`: Shows this help message.
 • `assassin help`: Show commands for the Assassin game.
 """
     say(help_text)
 
 def handle_daily_bonus_command(message, say):
     """Displays the current daily bonus targets for the channel."""
+    # ... (code is unchanged) ...
     channel_id = message['channel']
     if channel_id in daily_bonus_users and daily_bonus_users[channel_id]:
         targets = list(daily_bonus_users[channel_id])
@@ -1237,7 +1322,7 @@ def handle_daily_bonus_command(message, say):
         user2_name = get_user_name(targets[1])
         say(f"Today's bonus targets are *{user1_name}* and *{user2_name}*! Spots of them are worth 2 points.")
     else:
-        say("Bonus targets haven't been assigned for today yet.")
+        say("Bonus targets haven't been assigned for today yet, or this channel isn't active in the Spot Bot game.")
 
 
 # --- Keyword Listeners ---
@@ -1336,6 +1421,10 @@ def handle_assassin_end_keyword(message, client, say):
 def handle_assassin_targets_keyword(message, client):
     handle_assassin_targets_command(message, client)
 
+@app.message(re.compile(r"^assassin remove", re.IGNORECASE))
+def handle_assassin_remove_keyword(message, say, client):
+    handle_assassin_remove_command(message, say, client)
+
 @app.message(re.compile(r"^assassin help$", re.IGNORECASE))
 def handle_assassin_help_keyword(message, say):
     handle_assassin_help_command(message, say)
@@ -1345,10 +1434,7 @@ def handle_assassin_help_keyword(message, say):
 # ... (Existing reset listeners)
 @app.action("confirm_reset_action")
 def handle_confirm_reset_action(ack, body, client):
-    """
-    Handles the confirmation of a manual season reset.
-    Announces the winner of the interim period and sets a new reset timestamp.
-    """
+    # ... (code is unchanged) ...
     ack()
     global manual_reset_timestamps
 
@@ -1369,6 +1455,7 @@ def handle_confirm_reset_action(ack, body, client):
 
 @app.action("cancel_reset_action")
 def handle_cancel_reset_action(ack, body, client):
+    # ... (code is unchanged) ...
     ack()
     try:
         client.chat_delete(
@@ -1380,7 +1467,7 @@ def handle_cancel_reset_action(ack, body, client):
 
 @app.action("confirm_end_assassin_action")
 def handle_confirm_end_action(ack, body, client, say):
-    """Handles the confirmation to end the Assassin game."""
+    # ... (code is unchanged) ...
     ack() # Acknowledge the action immediately
 
     channel_id = body['channel']['id']
@@ -1429,7 +1516,7 @@ def handle_confirm_end_action(ack, body, client, say):
 
 @app.action("cancel_end_assassin_action")
 def handle_cancel_end_action(ack, body, client):
-    """Handles the cancellation of ending the Assassin game."""
+    # ... (code is unchanged) ...
     ack() # Acknowledge the action immediately
 
     channel_id = body['channel']['id']
@@ -1473,6 +1560,8 @@ def handle_mention(event, say, client):
          handle_assassin_end_request(event, client, say)
     elif command_part == "assassin targets": # New admin command
          handle_assassin_targets_command(event, client)
+    elif command_part.startswith("assassin remove"): # New admin command
+         handle_assassin_remove_command(event, say, client)
     elif command_part == "assassin help": # New help command
          handle_assassin_help_command(event, say)
     # Existing Spot Bot commands via mention
