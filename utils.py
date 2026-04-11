@@ -4,15 +4,50 @@ import pytz
 from datetime import datetime, timedelta
 
 from bot import app
-from config import SEASON_START_DATE, user_cache
+from config import user_cache
+
+_LEGACY_SEASON_START = datetime(2025, 10, 9, 0, 0, 0, tzinfo=pytz.timezone('America/Los_Angeles'))
 
 
-def get_current_season_id():
+def _legacy_season_id():
+    """
+    Reproduces the old 14-day season calculation for channels that have never
+    had a manual reset, so existing spots remain visible on the leaderboard.
+    """
     now = datetime.now(pytz.timezone('America/Los_Angeles'))
-    delta_days = (now - SEASON_START_DATE).days
+    delta_days = (now - _LEGACY_SEASON_START).days
     seasons_passed = delta_days // 14
-    current_season_start = SEASON_START_DATE + timedelta(days=(seasons_passed * 14))
+    current_season_start = _LEGACY_SEASON_START + timedelta(days=(seasons_passed * 14))
     return current_season_start.strftime('%Y-%m-%d')
+
+
+def get_current_season_id(channel_id):
+    """
+    Returns the season_id string for the channel's current season.
+    If the channel has never been manually reset, falls back to the legacy
+    14-day calculation so existing spots still appear on the leaderboard.
+    """
+    conn = None
+    cur = None
+    try:
+        conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT season_start FROM channel_seasons WHERE channel_id = %s ORDER BY season_start DESC LIMIT 1",
+            (channel_id,)
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0].strftime('%Y-%m-%d %H:%M:%S')
+        return _legacy_season_id()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"🔴 Error getting current season ID: {error}")
+        return _legacy_season_id()
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
 
 
 def get_user_name(user_id):
@@ -43,7 +78,7 @@ def announce_season_winner(season_id_to_process, channel_id, is_manual_reset=Fal
         winner_query = """
             SELECT spotter_id, SUM(spotter_points) AS total_score
             FROM spots
-            WHERE season_id = %s AND channel_id = %s AND is_valid = TRUE
+            WHERE season_id = %s AND channel_id = %s
             GROUP BY spotter_id
             ORDER BY total_score DESC
             LIMIT 1;

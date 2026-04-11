@@ -3,13 +3,11 @@ import re
 import io
 import random
 import psycopg2
-import pytz
 import requests
-from datetime import datetime
 from PIL import Image
 
 from bot import app, BOT_USER_ID
-from config import ADMIN_USER_ID, EXPLOSIONS_DIR, daily_bonus_users, manual_reset_timestamps
+from config import ADMIN_USER_ID, EXPLOSIONS_DIR, daily_bonus_users
 from utils import get_user_name, get_current_season_id, announce_season_winner
 from jobs import daily_bonus_job
 
@@ -46,6 +44,8 @@ def handle_spot_message(message, say):
         conn = psycopg2.connect(db_url)
         cur = conn.cursor()
 
+        season_id = get_current_season_id(channel_id)
+
         for spotted_id in mentioned_users:
             if spotter_id == spotted_id:
                 continue
@@ -57,7 +57,8 @@ def handle_spot_message(message, say):
 
             insert_command = """
             INSERT INTO spots (spotter_id, spotted_id, channel_id, message_ts, image_url, season_id, spotter_points, caught_points)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (message_ts, spotted_id) DO NOTHING;
             """
             spot_data = (
                 spotter_id,
@@ -65,12 +66,14 @@ def handle_spot_message(message, say):
                 channel_id,
                 message['ts'],
                 message['files'][0]['url_private'],
-                get_current_season_id(),
+                season_id,
                 spotter_points_to_award,
                 1,
             )
             cur.execute(insert_command, spot_data)
-            successful_spots += 1
+            if cur.rowcount > 0:
+                successful_spots += 1
+
 
         conn.commit()
 
@@ -131,7 +134,7 @@ def handle_message_deletion(event):
 def handle_spotboard_command(message, say):
     try:
         channel_id = message['channel']
-        current_season = get_current_season_id()
+        current_season = get_current_season_id(channel_id)
 
         db_url = os.environ.get("DATABASE_URL")
         conn = psycopg2.connect(db_url)
@@ -140,17 +143,13 @@ def handle_spotboard_command(message, say):
         query = """
             SELECT spotter_id, SUM(spotter_points) AS total_score
             FROM spots
-            WHERE is_valid = TRUE AND season_id = %s AND channel_id = %s
+            WHERE season_id = %s AND channel_id = %s
         """
         params = [current_season, channel_id]
 
-        if channel_id in manual_reset_timestamps:
-            query += " AND created_at >= %s"
-            params.append(manual_reset_timestamps[channel_id])
-
         query += """
             GROUP BY spotter_id
-            ORDER BY total_score DESC
+            ORDER BY total_score DESC, spotter_id ASC
             LIMIT 5;
         """
 
@@ -185,7 +184,7 @@ def handle_spotboard_command(message, say):
 def handle_caughtboard_command(message, say):
     try:
         channel_id = message['channel']
-        current_season = get_current_season_id()
+        current_season = get_current_season_id(channel_id)
 
         db_url = os.environ.get("DATABASE_URL")
         conn = psycopg2.connect(db_url)
@@ -194,17 +193,13 @@ def handle_caughtboard_command(message, say):
         query = """
             SELECT spotted_id, SUM(caught_points) AS total_score
             FROM spots
-            WHERE is_valid = TRUE AND season_id = %s AND channel_id = %s
+            WHERE season_id = %s AND channel_id = %s
         """
         params = [current_season, channel_id]
 
-        if channel_id in manual_reset_timestamps:
-            query += " AND created_at >= %s"
-            params.append(manual_reset_timestamps[channel_id])
-
         query += """
             GROUP BY spotted_id
-            ORDER BY total_score DESC
+            ORDER BY total_score DESC, spotted_id ASC
             LIMIT 5;
         """
 
@@ -245,9 +240,9 @@ def handle_alltime_spotboard_command(message, say):
         query = """
             SELECT spotter_id, SUM(spotter_points) AS total_score
             FROM spots
-            WHERE is_valid = TRUE AND channel_id = %s
+            WHERE channel_id = %s
             GROUP BY spotter_id
-            ORDER BY total_score DESC
+            ORDER BY total_score DESC, spotter_id ASC
             LIMIT 5;
         """
         cur.execute(query, (channel_id,))
@@ -283,9 +278,9 @@ def handle_alltime_caughtboard_command(message, say):
         query = """
             SELECT spotted_id, SUM(caught_points) AS total_score
             FROM spots
-            WHERE is_valid = TRUE AND channel_id = %s
+            WHERE channel_id = %s
             GROUP BY spotted_id
-            ORDER BY total_score DESC
+            ORDER BY total_score DESC, spotted_id ASC
             LIMIT 5;
         """
         cur.execute(query, (channel_id,))
@@ -370,8 +365,7 @@ def handle_mystats_command(message, say):
         cur.execute("""
             SELECT spotted_id, COUNT(*) as spot_count
             FROM spots
-            WHERE spotter_id = %s AND channel_id = %s AND is_valid = TRUE
-            GROUP BY spotted_id
+            WHERE spotter_id = %s AND channel_id = %s            GROUP BY spotted_id
             ORDER BY spot_count DESC
             LIMIT 1;
         """, (user_id, channel_id))
@@ -581,13 +575,18 @@ def handle_daily_bonus_keyword(message, say):
 @app.action("confirm_reset_action")
 def handle_confirm_reset_action(ack, body, client):
     ack()
+    conn = None
+    cur = None
     try:
         channel_id = body['channel']['id']
-        season_to_end_id = get_current_season_id()
+        season_to_end_id = get_current_season_id(channel_id)
         announce_season_winner(season_to_end_id, channel_id, is_manual_reset=True)
 
-        manual_reset_timestamps[channel_id] = datetime.now(pytz.timezone('America/Los_Angeles'))
-        print(f"--- MANUAL RESET: Reset timestamp set for channel {channel_id} ---")
+        conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+        cur = conn.cursor()
+        cur.execute("INSERT INTO channel_seasons (channel_id) VALUES (%s)", (channel_id,))
+        conn.commit()
+        print(f"--- MANUAL RESET: New season started for channel {channel_id} ---")
 
         client.chat_delete(
             channel=body['channel']['id'],
@@ -595,6 +594,11 @@ def handle_confirm_reset_action(ack, body, client):
         )
     except Exception as e:
         print(f"🔴 Error in confirm_reset_action: {e}")
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
 
 
 @app.action("cancel_reset_action")

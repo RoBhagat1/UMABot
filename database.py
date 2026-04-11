@@ -39,6 +39,13 @@ def setup_database():
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     """
+    channel_seasons_table_command = """
+    CREATE TABLE IF NOT EXISTS channel_seasons (
+        id SERIAL PRIMARY KEY,
+        channel_id TEXT NOT NULL,
+        season_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    """
     conn = None
     cur = None
     try:
@@ -51,6 +58,7 @@ def setup_database():
         cur.execute(spots_table_command)
         cur.execute(assassin_players_table_command)
         cur.execute(assassin_eliminations_table_command)
+        cur.execute(channel_seasons_table_command)
         conn.commit()
         print("✅ All database tables are ready.")
     except (Exception, psycopg2.DatabaseError) as error:

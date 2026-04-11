@@ -8,6 +8,19 @@ from config import ADMIN_USER_ID
 from utils import get_user_name
 
 
+def _random_derangement(players):
+    """
+    Returns a shuffled copy of players where no player is assigned themselves.
+    Unlike a circular chain, this can form multiple independent loops, making
+    target assignments harder to deduce.
+    """
+    while True:
+        targets = players[:]
+        random.shuffle(targets)
+        if all(p != t for p, t in zip(players, targets)):
+            return targets
+
+
 def handle_assassin_start_command(message, say, client):
     channel_id = message['channel']
     starter_id = message['user']
@@ -43,10 +56,9 @@ def handle_assassin_start_command(message, say, client):
         cur.execute("DELETE FROM assassin_eliminations WHERE channel_id = %s", (channel_id,))
 
         players = mentioned_users
-        random.shuffle(players)
+        targets = _random_derangement(players)
 
-        for i, player_id in enumerate(players):
-            target_id = players[(i + 1) % len(players)]
+        for player_id, target_id in zip(players, targets):
             cur.execute(
                 "INSERT INTO assassin_players (channel_id, player_id, target_id) VALUES (%s, %s, %s)",
                 (channel_id, player_id, target_id)
