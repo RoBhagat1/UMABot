@@ -1,9 +1,11 @@
 import os
 import random
 import psycopg2
+from datetime import datetime
+import pytz
 
 from bot import app
-from config import daily_bonus_users
+from config import daily_bonus_users, BIRTHDAY_CHANNEL_ID
 from utils import get_user_name
 
 
@@ -56,6 +58,44 @@ def daily_bonus_job():
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(f"🔴 Error in daily_bonus_job: {error}")
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+
+
+def birthday_job():
+    print("--- Running Birthday Job ---")
+    today = datetime.now(pytz.timezone('America/Los_Angeles'))
+
+    conn = None
+    cur = None
+    try:
+        db_url = os.environ.get("DATABASE_URL")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT user_id FROM birthdays WHERE birth_month = %s AND birth_day = %s",
+            (today.month, today.day)
+        )
+        birthday_users = [row[0] for row in cur.fetchall()]
+
+        for user_id in birthday_users:
+            lst_messages = ["You da goat", "Unc Now", "Black out tonight!", "You're the best!"]
+            rand_val = random.choice(lst_messages)
+            announcement = f"🎂 *Happy Birthday, <@{user_id}>!* 🎉🎈 " + rand_val
+            try:
+                app.client.chat_postMessage(channel=BIRTHDAY_CHANNEL_ID, text=announcement)
+                print(f"--- Birthday announced for {user_id} ---")
+            except Exception as api_error:
+                print(f"🔴 Error posting birthday announcement for {user_id}: {api_error}")
+
+        print("--- Birthday Job Finished ---")
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"🔴 Error in birthday_job: {error}")
     finally:
         if cur is not None:
             cur.close()

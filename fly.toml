@@ -1,0 +1,8 @@
+app = "umabot-uma-berkeley"
+primary_region = "sjc"
+
+[build]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

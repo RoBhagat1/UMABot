@@ -481,16 +481,16 @@ def handle_daily_bonus_command(message, say):
 def handle_spot_help_command(message, say):
     help_text = """
 *Spot Bot Commands:*
-• `spot @user` or `spotted @user` (with image): Record a spot. Counts for 1 point (or 2 for daily bonus targets!).
+• `spot @user` or `spotted @user` (with image): Record a spot. Counts for 1 point.
 • `spotboard`: Show the seasonal leaderboard of top spotters.
 • `caughtboard`: Show the seasonal leaderboard of most spotted players.
 • `alltimespotboard`: Show the all-time leaderboard of top spotters.
 • `alltimecaughtboard`: Show the all-time leaderboard of most spotted players.
 • `reset`: Manually end the current season and start a new one (admin only).
+• `birthday setup`: DMs everyone without a birthday on file to ask for it (admin only). Add `@user`s to only DM specific people, e.g. `birthday setup @alice @bob`. Reply to the DM with your birthday as MM/DD.
 • `miss you @user` or `i miss u @user`: Shows a random past spot picture of the mentioned user.
 • `mystats`: Shows your personal spotting stats in this channel.
 • `explode @user`: Overlays a random explosion on a random spot picture of the mentioned user.
-• `dailybonus`: Shows who the current daily bonus targets are.
 • `help`: Shows this help message.
 • `assassin help`: Show commands for the Assassin game.
 """
@@ -624,7 +624,6 @@ def handle_mention(event, say, client):
         handle_assassin_end_request, handle_assassin_targets_command,
         handle_assassin_remove_command, handle_assassin_help_command,
     )
-
     command_text = event['text'].strip().lower()
     command_part = re.sub(r'^<@\w+>\s*', '', command_text).strip()
 

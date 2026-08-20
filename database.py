@@ -46,6 +46,14 @@ def setup_database():
         season_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     """
+    birthdays_table_command = """
+    CREATE TABLE IF NOT EXISTS birthdays (
+        user_id TEXT PRIMARY KEY,
+        birth_month INTEGER NOT NULL,
+        birth_day INTEGER NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    """
     conn = None
     cur = None
     try:
@@ -59,6 +67,7 @@ def setup_database():
         cur.execute(assassin_players_table_command)
         cur.execute(assassin_eliminations_table_command)
         cur.execute(channel_seasons_table_command)
+        cur.execute(birthdays_table_command)
         conn.commit()
         print("✅ All database tables are ready.")
     except (Exception, psycopg2.DatabaseError) as error:
