@@ -51,8 +51,7 @@ def handle_birthday_setup_command(event, say, client, target_user_ids=None):
                 dm_channel_id = dm['channel']['id']
                 client.chat_postMessage(
                     channel=dm_channel_id,
-                    text="🎂 Hey! I'm collecting birthdays for celebration shoutouts. "
-                         "Reply here with your birthday as MM/DD (e.g. 03/14) and I'll remember it."
+                    text="🎂 Reply with your birthday as MM/DD (e.g. 03/14) and we'll get to celebrate it together!"
                 )
                 dm_count += 1
             except Exception as dm_error:
