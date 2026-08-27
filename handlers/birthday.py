@@ -55,7 +55,7 @@ def handle_birthday_setup_command(event, say, client, target_user_ids=None):
                 )
                 dm_count += 1
             except Exception as dm_error:
-                print(f"🔴 Error DMing {give me the list of user_id} for birthday setup: {dm_error}")
+                print(f"🔴 Error DMing {user_id} for birthday setup: {dm_error}")
 
         scope = f"{len(candidate_ids)} selected user(s)" if target_user_ids else "the workspace"
         say(f"Birthday setup complete. DMed {dm_count} user(s) from {scope} who don't have a birthday on file yet.")
