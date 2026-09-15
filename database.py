@@ -54,6 +54,19 @@ def setup_database():
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     """
+    internship_subscribers_table_command = """
+    CREATE TABLE IF NOT EXISTS internship_subscribers (
+        user_id TEXT PRIMARY KEY,
+        status TEXT NOT NULL CHECK (status IN ('subscribed', 'declined')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    """
+    sent_internship_listings_table_command = """
+    CREATE TABLE IF NOT EXISTS sent_internship_listings (
+        listing_id TEXT PRIMARY KEY,
+        sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    """
     conn = None
     cur = None
     try:
@@ -68,6 +81,8 @@ def setup_database():
         cur.execute(assassin_eliminations_table_command)
         cur.execute(channel_seasons_table_command)
         cur.execute(birthdays_table_command)
+        cur.execute(internship_subscribers_table_command)
+        cur.execute(sent_internship_listings_table_command)
         conn.commit()
         print("✅ All database tables are ready.")
     except (Exception, psycopg2.DatabaseError) as error:
