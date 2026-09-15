@@ -53,7 +53,7 @@ def handle_internship_ask_command(event, say, client, target_user_ids=None):
                 client.chat_postMessage(
                     channel=dm_channel_id,
                     text="📋 Want daily alerts about new marketing internships "
-                         "(posted 24-48 hours ago)? Reply here with yes or no."
+                         "(posted in the last 24 hours)? Reply here with yes or no."
                 )
                 dm_count += 1
             except Exception as dm_error:

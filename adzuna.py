@@ -4,17 +4,17 @@ from datetime import datetime, timezone, timedelta
 import requests
 
 ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs/us/search/1"
-SEARCH_QUERY = "marketing internship"
-MAX_DAYS_OLD = 2
+SEARCH_QUERY = "marketing intern"
+MAX_DAYS_OLD = 1
 RESULTS_PER_PAGE = 50
-MIN_AGE_HOURS = 24
-MAX_AGE_HOURS = 48
+MIN_AGE_HOURS = 0
+MAX_AGE_HOURS = 24
 
 
 def fetch_new_marketing_internships():
     """
     Queries Adzuna for marketing internship listings (US-wide) and returns
-    only those whose `created` timestamp is between 24 and 48 hours old.
+    only those whose `created` timestamp is within the last 24 hours.
 
     Returns a list of dicts: id, title, company, location, redirect_url, created.
     Raises requests.RequestException on network/API failure.

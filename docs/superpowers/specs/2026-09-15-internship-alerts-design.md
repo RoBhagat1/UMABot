@@ -3,7 +3,7 @@
 ## Purpose
 
 Give UMABot the ability to notify opted-in members, once a day, about
-new marketing internship postings that appeared 24–48 hours ago. This
+new marketing internship postings from the last 24 hours. This
 mirrors the existing birthday feature's opt-in/broadcast pattern but
 sources its data from an external job API (Adzuna) instead of
 user-submitted info.
@@ -21,8 +21,8 @@ user-submitted info.
 - Scraping individual company career pages — brittle, no reliable posted-date field.
 
 Adzuna gives structured JSON search results with a real `created` timestamp
-per listing, which is the load-bearing requirement (filtering to a specific
-24–48h-old window). Search scope: United States, nationwide.
+per listing, which is the load-bearing requirement (filtering to listings
+posted in the last 24 hours). Search scope: United States, nationwide.
 
 Credentials: `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`, obtained via free signup
 at developer.adzuna.com, stored in `.env` locally and as Fly secrets in
@@ -64,7 +64,7 @@ scope" for revisiting a declined choice).
 `sent_internship_listings` is a global, cross-user dedup table: once a
 given Adzuna listing has been sent to subscribers, its `listing_id` is
 recorded so it's never sent again on a later run, even if it technically
-still falls within some future day's 24–48h window (it won't, given the
+still falls within some future day's last-24h window (it won't, given the
 run cadence, but this also guards against manual re-runs during testing).
 
 ## Opt-in / unsubscribe flow
@@ -96,10 +96,10 @@ alongside the existing `birthday_job` registration.
 Steps:
 1. Call Adzuna's search endpoint:
    `GET https://api.adzuna.com/v1/api/jobs/us/search/1`
-   with `app_id`, `app_key`, `what=marketing internship`, `sort_by=date`,
-   `max_days_old=2`, a reasonable `results_per_page` (e.g. 50).
+   with `app_id`, `app_key`, `what=marketing intern`, `sort_by=date`,
+   `max_days_old=1`, a reasonable `results_per_page` (e.g. 50).
 2. For each result, parse its `created` timestamp and keep only those
-   whose age is between 24 and 48 hours at job-run time, and whose
+   posted within the last 24 hours at job-run time, and whose
    `id` is not already present in `sent_internship_listings`.
 3. If the filtered set is empty, log and exit — **no DMs are sent** that
    day (per decision: silence over a low-value "nothing new" ping).
@@ -129,7 +129,7 @@ Steps:
 
 - `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` — new required env vars, added to
   `.env` and Fly secrets.
-- Search query string (`"marketing internship"`) and country scope (`us`)
+- Search query string (`"marketing intern"`) and country scope (`us`)
   live as constants in `handlers/internships.py` or `config.py` — not
   user-configurable via Slack in this iteration (YAGNI; can be revisited
   if the org wants to broaden/narrow the search later).

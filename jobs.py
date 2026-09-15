@@ -160,7 +160,7 @@ def internship_digest_job():
         f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
         for listing in new_listings
     ]
-    digest_text = "📋 *New marketing internships (posted 24-48 hours ago):*\n\n" + "\n\n".join(digest_lines)
+    digest_text = "📋 *New marketing internships (posted in the last 24 hours):*\n\n" + "\n\n".join(digest_lines)
 
     for user_id in subscriber_ids:
         try:
