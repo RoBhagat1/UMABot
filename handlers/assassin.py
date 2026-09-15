@@ -526,7 +526,7 @@ def handle_assassin_start_keyword(message, say, client):
     handle_assassin_start_command(message, say, client)
 
 
-@app.message(re.compile(r"^(assassin target|mytarget)$", re.IGNORECASE))
+@app.message(re.compile(r"^(assassin target|mytarget)\s*$", re.IGNORECASE))
 def handle_assassin_target_keyword(message, say, client):
     handle_assassin_target_command(message, say, client)
 
@@ -536,27 +536,27 @@ def handle_eliminated_keyword(message, say, client):
     handle_eliminated_command(message, say, client)
 
 
-@app.message(re.compile(r"^assassin alive$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin alive\s*$", re.IGNORECASE))
 def handle_assassin_alive_keyword(message, say):
     handle_assassin_alive_command(message, say)
 
 
-@app.message(re.compile(r"^assassin dead$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin dead\s*$", re.IGNORECASE))
 def handle_assassin_dead_keyword(message, say):
     handle_assassin_dead_command(message, say)
 
 
-@app.message(re.compile(r"^assassin killcount$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin killcount\s*$", re.IGNORECASE))
 def handle_assassin_killcount_keyword(message, say):
     handle_assassin_killcount_command(message, say)
 
 
-@app.message(re.compile(r"^assassin end$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin end\s*$", re.IGNORECASE))
 def handle_assassin_end_keyword(message, client, say):
     handle_assassin_end_request(message, client, say)
 
 
-@app.message(re.compile(r"^assassin targets$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin targets\s*$", re.IGNORECASE))
 def handle_assassin_targets_keyword(message, client):
     handle_assassin_targets_command(message, client)
 
@@ -566,7 +566,7 @@ def handle_assassin_remove_keyword(message, say, client):
     handle_assassin_remove_command(message, say, client)
 
 
-@app.message(re.compile(r"^assassin help$", re.IGNORECASE))
+@app.message(re.compile(r"^assassin help\s*$", re.IGNORECASE))
 def handle_assassin_help_keyword(message, say):
     handle_assassin_help_command(message, say)
 

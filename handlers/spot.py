@@ -499,27 +499,27 @@ def handle_spot_help_command(message, say):
 
 # --- Keyword Listeners ---
 
-@app.message(re.compile(r"^spotboard$", re.IGNORECASE))
+@app.message(re.compile(r"^spotboard\s*$", re.IGNORECASE))
 def handle_spotboard_keyword(message, say):
     handle_spotboard_command(message, say)
 
 
-@app.message(re.compile(r"^caughtboard$", re.IGNORECASE))
+@app.message(re.compile(r"^caughtboard\s*$", re.IGNORECASE))
 def handle_caughtboard_keyword(message, say):
     handle_caughtboard_command(message, say)
 
 
-@app.message(re.compile(r"^(alltimespotboard|all time spot board)$", re.IGNORECASE))
+@app.message(re.compile(r"^(alltimespotboard|all time spot board)\s*$", re.IGNORECASE))
 def handle_alltime_spotboard_keyword(message, say):
     handle_alltime_spotboard_command(message, say)
 
 
-@app.message(re.compile(r"^(alltimecaughtboard|all time caught board)$", re.IGNORECASE))
+@app.message(re.compile(r"^(alltimecaughtboard|all time caught board)\s*$", re.IGNORECASE))
 def handle_alltime_caughtboard_keyword(message, say):
     handle_alltime_caughtboard_command(message, say)
 
 
-@app.message(re.compile(r"^reset$", re.IGNORECASE))
+@app.message(re.compile(r"^reset\s*$", re.IGNORECASE))
 def handle_reset_request(message, client):
     if message['user'] != ADMIN_USER_ID:
         client.chat_postEphemeral(
@@ -550,7 +550,7 @@ def handle_miss_you_keyword(message, say):
     handle_miss_you_command(message, say)
 
 
-@app.message(re.compile(r"^mystats$", re.IGNORECASE))
+@app.message(re.compile(r"^mystats\s*$", re.IGNORECASE))
 def handle_mystats_keyword(message, say):
     handle_mystats_command(message, say)
 
@@ -560,12 +560,12 @@ def handle_explode_keyword(message, say, client):
     handle_explode_command(message, say, client)
 
 
-@app.message(re.compile(r"^help$", re.IGNORECASE))
+@app.message(re.compile(r"^help\s*$", re.IGNORECASE))
 def handle_spot_help_keyword(message, say):
     handle_spot_help_command(message, say)
 
 
-@app.message(re.compile(r"^dailybonus$", re.IGNORECASE))
+@app.message(re.compile(r"^dailybonus\s*$", re.IGNORECASE))
 def handle_daily_bonus_keyword(message, say):
     handle_daily_bonus_command(message, say)
 
