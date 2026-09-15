@@ -7,6 +7,7 @@ import pytz
 from bot import app
 from config import daily_bonus_users, BIRTHDAY_CHANNEL_ID
 from utils import get_user_name
+from adzuna import fetch_new_marketing_internships
 
 
 def daily_bonus_job():
@@ -101,3 +102,73 @@ def birthday_job():
             cur.close()
         if conn is not None:
             conn.close()
+
+
+def internship_digest_job():
+    print("--- Running Internship Digest Job ---")
+    try:
+        listings = fetch_new_marketing_internships()
+    except Exception as error:
+        print(f"🔴 Error fetching internship listings from Adzuna: {error}")
+        return
+
+    if not listings:
+        print("--- No new qualifying internship listings found. Skipping. ---")
+        return
+
+    conn = None
+    cur = None
+    new_listings = []
+    subscriber_ids = []
+    try:
+        db_url = os.environ.get("DATABASE_URL")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+
+        cur.execute("SELECT listing_id FROM sent_internship_listings")
+        already_sent = {row[0] for row in cur.fetchall()}
+        new_listings = [listing for listing in listings if listing["id"] not in already_sent]
+
+        if not new_listings:
+            print("--- All fetched listings were already sent. Skipping. ---")
+            return
+
+        for listing in new_listings:
+            cur.execute(
+                "INSERT INTO sent_internship_listings (listing_id) VALUES (%s) ON CONFLICT DO NOTHING",
+                (listing["id"],)
+            )
+        conn.commit()
+
+        cur.execute("SELECT user_id FROM internship_subscribers WHERE status = 'subscribed'")
+        subscriber_ids = [row[0] for row in cur.fetchall()]
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"🔴 Error in internship_digest_job (database phase): {error}")
+        return
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+
+    if not new_listings or not subscriber_ids:
+        print("--- No subscribers to notify. ---")
+        return
+
+    digest_lines = [
+        f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
+        for listing in new_listings
+    ]
+    digest_text = "📋 *New marketing internships (posted 24-48 hours ago):*\n\n" + "\n\n".join(digest_lines)
+
+    for user_id in subscriber_ids:
+        try:
+            dm = app.client.conversations_open(users=user_id)
+            dm_channel_id = dm['channel']['id']
+            app.client.chat_postMessage(channel=dm_channel_id, text=digest_text)
+            print(f"--- Internship digest sent to {user_id} ---")
+        except Exception as api_error:
+            print(f"🔴 Error sending internship digest to {user_id}: {api_error}")
+
+    print("--- Internship Digest Job Finished ---")
