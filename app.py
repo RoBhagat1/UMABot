@@ -18,7 +18,11 @@ if __name__ == "__main__":
     # daily_bonus_job disabled — re-add this line to bring the 2x daily bonus back
     # scheduler.add_job(daily_bonus_job, 'cron', hour=0, minute=0)
     scheduler.add_job(birthday_job, 'cron', hour=9, minute=45)
-    scheduler.add_job(internship_digest_job, 'cron', hour=12, minute=0)
+    # internship_digest_job paused — Adzuna's redirect_url links are unreliable
+    # (dead links, third-party bounces through services like "aiapply" instead
+    # of the employer's own posting). Re-add this line once a reliable link
+    # source is in place.
+    # scheduler.add_job(internship_digest_job, 'cron', hour=12, minute=0)
     scheduler.start()
     print("⏰ Scheduler started. All jobs are scheduled.")
 
