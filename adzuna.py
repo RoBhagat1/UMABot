@@ -44,20 +44,37 @@ def fetch_new_marketing_internships():
 
     listings = []
     for result in payload.get("results", []):
-        created_raw = result.get("created")
-        if not created_raw:
-            continue
-        created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
-        if not (min_created <= created_at <= max_created):
-            continue
+        try:
+            # Guard against missing id
+            listing_id = result.get("id")
+            if not listing_id:
+                print(f"Skipping result with missing id: {result}")
+                continue
 
-        listings.append({
-            "id": str(result["id"]),
-            "title": result.get("title", "Untitled listing"),
-            "company": result.get("company", {}).get("display_name", "Unknown company"),
-            "location": result.get("location", {}).get("display_name", "Unknown location"),
-            "redirect_url": result.get("redirect_url", ""),
-            "created": created_at,
-        })
+            created_raw = result.get("created")
+            if not created_raw:
+                continue
+            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+            if not (min_created <= created_at <= max_created):
+                continue
+
+            # Guard against None values for company and location
+            company_obj = result.get("company")
+            company_name = company_obj.get("display_name", "Unknown company") if company_obj else "Unknown company"
+
+            location_obj = result.get("location")
+            location_name = location_obj.get("display_name", "Unknown location") if location_obj else "Unknown location"
+
+            listings.append({
+                "id": str(listing_id),
+                "title": result.get("title", "Untitled listing"),
+                "company": company_name,
+                "location": location_name,
+                "redirect_url": result.get("redirect_url", ""),
+                "created": created_at,
+            })
+        except Exception as e:
+            print(f"Skipping malformed result: {result}. Error: {e}")
+            continue
 
     return listings
