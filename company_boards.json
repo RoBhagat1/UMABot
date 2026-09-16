@@ -1,0 +1,672 @@
+[
+  {
+    "company": "2K",
+    "platform": "greenhouse",
+    "token": "2k"
+  },
+  {
+    "company": "A&C Plastics",
+    "platform": "greenhouse",
+    "token": "acplastics"
+  },
+  {
+    "company": "Addepar",
+    "platform": "greenhouse",
+    "token": "addepar1"
+  },
+  {
+    "company": "Affirm",
+    "platform": "greenhouse",
+    "token": "affirm"
+  },
+  {
+    "company": "Aircall",
+    "platform": "lever",
+    "token": "aircall"
+  },
+  {
+    "company": "Allegiant",
+    "platform": "lever",
+    "token": "allegiantair"
+  },
+  {
+    "company": "Authentic Brands Group",
+    "platform": "greenhouse",
+    "token": "authenticbrandsgroup"
+  },
+  {
+    "company": "Axios",
+    "platform": "greenhouse",
+    "token": "axios"
+  },
+  {
+    "company": "Axogen",
+    "platform": "greenhouse",
+    "token": "axogen"
+  },
+  {
+    "company": "Bandwidth",
+    "platform": "greenhouse",
+    "token": "bandwidth"
+  },
+  {
+    "company": "BARK",
+    "platform": "greenhouse",
+    "token": "bark"
+  },
+  {
+    "company": "Behaviour Interactive",
+    "platform": "lever",
+    "token": "bhvr"
+  },
+  {
+    "company": "BetterHelp",
+    "platform": "greenhouse",
+    "token": "betterhelpcom"
+  },
+  {
+    "company": "BlaBlaCar",
+    "platform": "lever",
+    "token": "blablacar"
+  },
+  {
+    "company": "Blacklane",
+    "platform": "greenhouse",
+    "token": "blacklane"
+  },
+  {
+    "company": "Blockchain.com",
+    "platform": "greenhouse",
+    "token": "blockchain"
+  },
+  {
+    "company": "Braze",
+    "platform": "greenhouse",
+    "token": "braze"
+  },
+  {
+    "company": "Brevo",
+    "platform": "lever",
+    "token": "brevo"
+  },
+  {
+    "company": "CASETiFY",
+    "platform": "greenhouse",
+    "token": "casetify"
+  },
+  {
+    "company": "Celonis",
+    "platform": "greenhouse",
+    "token": "celonis"
+  },
+  {
+    "company": "Chime",
+    "platform": "greenhouse",
+    "token": "chime"
+  },
+  {
+    "company": "Circa (IPG DXTRA)",
+    "platform": "greenhouse",
+    "token": "dxacirca"
+  },
+  {
+    "company": "CLEAR",
+    "platform": "greenhouse",
+    "token": "clear"
+  },
+  {
+    "company": "Cloudflare",
+    "platform": "greenhouse",
+    "token": "cloudflare"
+  },
+  {
+    "company": "COFRA Holding",
+    "platform": "greenhouse",
+    "token": "cofraholding"
+  },
+  {
+    "company": "CoinGecko",
+    "platform": "lever",
+    "token": "coingecko"
+  },
+  {
+    "company": "Cologix",
+    "platform": "lever",
+    "token": "cologix"
+  },
+  {
+    "company": "Contentsquare",
+    "platform": "lever",
+    "token": "contentsquare"
+  },
+  {
+    "company": "Copper State Farms",
+    "platform": "greenhouse",
+    "token": "copperstatefarms"
+  },
+  {
+    "company": "CourtAvenue",
+    "platform": "lever",
+    "token": "court-avenue"
+  },
+  {
+    "company": "Databento",
+    "platform": "greenhouse",
+    "token": "databento"
+  },
+  {
+    "company": "Datadog",
+    "platform": "greenhouse",
+    "token": "datadog"
+  },
+  {
+    "company": "Dataiku",
+    "platform": "greenhouse",
+    "token": "dataiku"
+  },
+  {
+    "company": "Dcard",
+    "platform": "greenhouse",
+    "token": "dcard"
+  },
+  {
+    "company": "DeepIntent",
+    "platform": "greenhouse",
+    "token": "deepintent"
+  },
+  {
+    "company": "Deliveroo",
+    "platform": "greenhouse",
+    "token": "deliveroo"
+  },
+  {
+    "company": "Denver Broncos",
+    "platform": "greenhouse",
+    "token": "denverbroncosteamllc"
+  },
+  {
+    "company": "DEPT\u00ae",
+    "platform": "greenhouse",
+    "token": "dept"
+  },
+  {
+    "company": "Detroit Lions",
+    "platform": "greenhouse",
+    "token": "detroitlions"
+  },
+  {
+    "company": "Dolls Kill",
+    "platform": "lever",
+    "token": "dollskill"
+  },
+  {
+    "company": "Dorsia",
+    "platform": "greenhouse",
+    "token": "dorsia"
+  },
+  {
+    "company": "Dream Games",
+    "platform": "lever",
+    "token": "dreamgames"
+  },
+  {
+    "company": "e.l.f. Beauty",
+    "platform": "lever",
+    "token": "elfbeauty"
+  },
+  {
+    "company": "Endpoint Clinical",
+    "platform": "lever",
+    "token": "endpointclinical"
+  },
+  {
+    "company": "Excel Sports Management",
+    "platform": "greenhouse",
+    "token": "excelsportsmanagement"
+  },
+  {
+    "company": "Fanatee",
+    "platform": "lever",
+    "token": "fanatee"
+  },
+  {
+    "company": "Financial Times",
+    "platform": "greenhouse",
+    "token": "financialtimes33"
+  },
+  {
+    "company": "FireMon",
+    "platform": "lever",
+    "token": "firemon"
+  },
+  {
+    "company": "Florida Panthers",
+    "platform": "greenhouse",
+    "token": "thefloridapanthers"
+  },
+  {
+    "company": "Forbes",
+    "platform": "greenhouse",
+    "token": "forbes"
+  },
+  {
+    "company": "Forthea",
+    "platform": "greenhouse",
+    "token": "forthea"
+  },
+  {
+    "company": "Galaxy Digital",
+    "platform": "greenhouse",
+    "token": "galaxydigitalservices"
+  },
+  {
+    "company": "GCM Grosvenor",
+    "platform": "greenhouse",
+    "token": "gcmgrosvenor"
+  },
+  {
+    "company": "GeoComply",
+    "platform": "lever",
+    "token": "geocomply-2"
+  },
+  {
+    "company": "GigFinesse",
+    "platform": "greenhouse",
+    "token": "gigfinesse"
+  },
+  {
+    "company": "GoFundMe",
+    "platform": "greenhouse",
+    "token": "gofundme"
+  },
+  {
+    "company": "Golden Pet Brands",
+    "platform": "greenhouse",
+    "token": "goldenpetbrands"
+  },
+  {
+    "company": "Golin",
+    "platform": "greenhouse",
+    "token": "golin"
+  },
+  {
+    "company": "Goop",
+    "platform": "greenhouse",
+    "token": "goop"
+  },
+  {
+    "company": "Gracious Hospitality Management",
+    "platform": "greenhouse",
+    "token": "gracioushospitality"
+  },
+  {
+    "company": "Greenhouse Software",
+    "platform": "greenhouse",
+    "token": "greenhouse"
+  },
+  {
+    "company": "Gusto",
+    "platform": "greenhouse",
+    "token": "gusto"
+  },
+  {
+    "company": "HackerRank",
+    "platform": "greenhouse",
+    "token": "hackerrank"
+  },
+  {
+    "company": "Harry's",
+    "platform": "greenhouse",
+    "token": "harrys"
+  },
+  {
+    "company": "HCVT",
+    "platform": "lever",
+    "token": "hcvt"
+  },
+  {
+    "company": "Hightouch",
+    "platform": "greenhouse",
+    "token": "hightouch"
+  },
+  {
+    "company": "HumanSignal",
+    "platform": "greenhouse",
+    "token": "humansignal"
+  },
+  {
+    "company": "Hydrow",
+    "platform": "lever",
+    "token": "Hydrow"
+  },
+  {
+    "company": "Impact.com",
+    "platform": "greenhouse",
+    "token": "impact"
+  },
+  {
+    "company": "Interbrand",
+    "platform": "greenhouse",
+    "token": "interbrand"
+  },
+  {
+    "company": "Jobscan",
+    "platform": "lever",
+    "token": "jobscan-2"
+  },
+  {
+    "company": "Kabam",
+    "platform": "lever",
+    "token": "kabam"
+  },
+  {
+    "company": "Kiva.org",
+    "platform": "greenhouse",
+    "token": "kivaorg"
+  },
+  {
+    "company": "KnowBe4",
+    "platform": "greenhouse",
+    "token": "knowbe4"
+  },
+  {
+    "company": "Low Battery",
+    "platform": "lever",
+    "token": "raptv"
+  },
+  {
+    "company": "Lumafield",
+    "platform": "lever",
+    "token": "lumafield"
+  },
+  {
+    "company": "M18",
+    "platform": "greenhouse",
+    "token": "m18"
+  },
+  {
+    "company": "Match Group",
+    "platform": "lever",
+    "token": "matchgroup"
+  },
+  {
+    "company": "MCA Connect",
+    "platform": "lever",
+    "token": "mcaconnect"
+  },
+  {
+    "company": "Mill",
+    "platform": "greenhouse",
+    "token": "mill"
+  },
+  {
+    "company": "Minitab",
+    "platform": "greenhouse",
+    "token": "minitab"
+  },
+  {
+    "company": "Mirakl",
+    "platform": "greenhouse",
+    "token": "mirakl"
+  },
+  {
+    "company": "MLB",
+    "platform": "greenhouse",
+    "token": "mlbevents"
+  },
+  {
+    "company": "Mosaic Group",
+    "platform": "greenhouse",
+    "token": "mosaicgroup"
+  },
+  {
+    "company": "MyFitnessPal",
+    "platform": "greenhouse",
+    "token": "myfitnesspal"
+  },
+  {
+    "company": "Naked Farmer Careers",
+    "platform": "greenhouse",
+    "token": "nakedfarmer"
+  },
+  {
+    "company": "Nansen.ai",
+    "platform": "greenhouse",
+    "token": "nansen"
+  },
+  {
+    "company": "Novara",
+    "platform": "lever",
+    "token": "novara"
+  },
+  {
+    "company": "NVE Experience Agency",
+    "platform": "greenhouse",
+    "token": "nve"
+  },
+  {
+    "company": "Olaplex",
+    "platform": "greenhouse",
+    "token": "olaplexcareers"
+  },
+  {
+    "company": "On",
+    "platform": "greenhouse",
+    "token": "onrunning"
+  },
+  {
+    "company": "One Impression",
+    "platform": "lever",
+    "token": "oneimpression"
+  },
+  {
+    "company": "Phoenix Contact",
+    "platform": "greenhouse",
+    "token": "phoenixcontact"
+  },
+  {
+    "company": "Pigment",
+    "platform": "lever",
+    "token": "pigment"
+  },
+  {
+    "company": "Pison Technology",
+    "platform": "lever",
+    "token": "pison"
+  },
+  {
+    "company": "Power Digital Marketing",
+    "platform": "greenhouse",
+    "token": "powerdigitalmarketing"
+  },
+  {
+    "company": "Precision Medicine Group",
+    "platform": "greenhouse",
+    "token": "precisionmedicinegroup"
+  },
+  {
+    "company": "Pure Storage",
+    "platform": "greenhouse",
+    "token": "purestorage"
+  },
+  {
+    "company": "Quantum Workplace",
+    "platform": "lever",
+    "token": "QuantumWorkplace"
+  },
+  {
+    "company": "RainFocus",
+    "platform": "lever",
+    "token": "rainfocus"
+  },
+  {
+    "company": "Reltio",
+    "platform": "greenhouse",
+    "token": "reltio"
+  },
+  {
+    "company": "Samsung Semiconductor",
+    "platform": "greenhouse",
+    "token": "samsungsemiconductor"
+  },
+  {
+    "company": "SFMOMA",
+    "platform": "lever",
+    "token": "sfmoma"
+  },
+  {
+    "company": "Signifyd",
+    "platform": "greenhouse",
+    "token": "signifyd95"
+  },
+  {
+    "company": "Skydance",
+    "platform": "lever",
+    "token": "skydance"
+  },
+  {
+    "company": "Sol de Janeiro",
+    "platform": "greenhouse",
+    "token": "soldejaneiro"
+  },
+  {
+    "company": "SoundCloud",
+    "platform": "greenhouse",
+    "token": "soundcloud71"
+  },
+  {
+    "company": "Spotify",
+    "platform": "lever",
+    "token": "spotify"
+  },
+  {
+    "company": "Sprinto",
+    "platform": "lever",
+    "token": "Sprinto"
+  },
+  {
+    "company": "Stand Together",
+    "platform": "lever",
+    "token": "standtogether"
+  },
+  {
+    "company": "Stoneridge Software",
+    "platform": "lever",
+    "token": "stoneridgesoftware"
+  },
+  {
+    "company": "Suger.io",
+    "platform": "lever",
+    "token": "suger"
+  },
+  {
+    "company": "Supergoop!",
+    "platform": "greenhouse",
+    "token": "supergoop"
+  },
+  {
+    "company": "Telligen",
+    "platform": "lever",
+    "token": "telligen"
+  },
+  {
+    "company": "Telnyx",
+    "platform": "greenhouse",
+    "token": "telnyx54"
+  },
+  {
+    "company": "The Dispatch",
+    "platform": "lever",
+    "token": "thedispatch"
+  },
+  {
+    "company": "The Millennium Alliance",
+    "platform": "greenhouse",
+    "token": "themillenniumalliance"
+  },
+  {
+    "company": "The New York Times",
+    "platform": "greenhouse",
+    "token": "thenewyorktimes"
+  },
+  {
+    "company": "The Quality Group GmbH",
+    "platform": "greenhouse",
+    "token": "thequalitygroupgmbh1"
+  },
+  {
+    "company": "Thesis",
+    "platform": "greenhouse",
+    "token": "thesiscareers"
+  },
+  {
+    "company": "Travix",
+    "platform": "greenhouse",
+    "token": "travix"
+  },
+  {
+    "company": "Tripalink",
+    "platform": "lever",
+    "token": "tripalink"
+  },
+  {
+    "company": "Van Metre Companies",
+    "platform": "greenhouse",
+    "token": "vanmetre"
+  },
+  {
+    "company": "Veeam Software",
+    "platform": "greenhouse",
+    "token": "veeamsoftware"
+  },
+  {
+    "company": "Vestiaire Collective",
+    "platform": "lever",
+    "token": "vestiairecollective"
+  },
+  {
+    "company": "Weber Shandwick",
+    "platform": "greenhouse",
+    "token": "webershandwick"
+  },
+  {
+    "company": "WebFX",
+    "platform": "lever",
+    "token": "webfx"
+  },
+  {
+    "company": "Webstacks",
+    "platform": "greenhouse",
+    "token": "webstacks"
+  },
+  {
+    "company": "Wing Assistant",
+    "platform": "lever",
+    "token": "getwingapp"
+  },
+  {
+    "company": "Workato",
+    "platform": "greenhouse",
+    "token": "workato"
+  },
+  {
+    "company": "Workshop",
+    "platform": "greenhouse",
+    "token": "workshop"
+  },
+  {
+    "company": "Xsolla",
+    "platform": "lever",
+    "token": "xsolla"
+  },
+  {
+    "company": "Yuno",
+    "platform": "lever",
+    "token": "yuno"
+  },
+  {
+    "company": "Zoox",
+    "platform": "lever",
+    "token": "zoox"
+  }
+]

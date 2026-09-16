@@ -7,7 +7,7 @@ import pytz
 from bot import app
 from config import daily_bonus_users, BIRTHDAY_CHANNEL_ID
 from utils import get_user_name
-from adzuna import fetch_new_marketing_internships
+from job_boards import fetch_new_marketing_internships
 
 
 def daily_bonus_job():
@@ -109,7 +109,7 @@ def internship_digest_job():
     try:
         listings = fetch_new_marketing_internships()
     except Exception as error:
-        print(f"🔴 Error fetching internship listings from Adzuna: {error}")
+        print(f"🔴 Error fetching internship listings from job boards: {error}")
         return
 
     if not listings:
