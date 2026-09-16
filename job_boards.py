@@ -2,6 +2,7 @@ import json
 import os
 import re
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote
 
 import requests
 
@@ -10,6 +11,17 @@ GREENHOUSE_URL_TEMPLATE = "https://boards-api.greenhouse.io/v1/boards/{token}/jo
 LEVER_URL_TEMPLATE = "https://api.lever.co/v0/postings/{token}?mode=json"
 AMAZON_SEARCH_URL = "https://www.amazon.jobs/en/search.json"
 AMAZON_BASE_JOB_URL = "https://www.amazon.jobs"
+WORKABLE_URL_TEMPLATE = "https://apply.workable.com/api/v1/widget/accounts/{token}"
+ASHBY_URL_TEMPLATE = "https://api.ashbyhq.com/posting-api/job-board/{token}"
+WORKDAY_SEARCH_URL_TEMPLATE = "https://{tenant}.{dc}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs"
+WORKDAY_JOB_BASE_URL_TEMPLATE = "https://{tenant}.{dc}.myworkdayjobs.com/{site}"
+# Workday only gives a coarse relative "posted" bucket, not an exact
+# timestamp — this maps each bucket to an approximate age in hours so it
+# can go through the same _in_window() check as every other platform.
+WORKDAY_POSTED_AGE_HOURS = {
+    "today": 0,
+    "yesterday": 24,
+}
 MIN_AGE_HOURS = 0
 MAX_AGE_HOURS = 24
 # Matches "intern", "interns", "internship", "internships" as whole words —
@@ -184,6 +196,170 @@ def _fetch_amazon(now):
     return listings
 
 
+def _fetch_workable(company, token, now):
+    listings = []
+    try:
+        response = requests.get(
+            WORKABLE_URL_TEMPLATE.format(token=quote(token, safe="")),
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        print(f"🔴 Error fetching Workable board for {company} ({token}): {error}")
+        return listings
+
+    for job in payload.get("jobs", []):
+        try:
+            title = job.get("title", "")
+            if not _matches_title(title):
+                continue
+
+            created_raw = job.get("published_on") or job.get("created_at")
+            if not created_raw:
+                continue
+            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            created_at = created_at.astimezone(timezone.utc)
+            if not _in_window(created_at, now):
+                continue
+
+            job_shortcode = job.get("shortcode") or job.get("id")
+            job_url = job.get("url") or job.get("application_url")
+            if not job_shortcode or not job_url:
+                continue
+
+            listings.append({
+                "id": f"workable:{token}:{job_shortcode}",
+                "title": title,
+                "company": company,
+                "location": job.get("location", {}).get("location_str", "Unknown location")
+                if isinstance(job.get("location"), dict) else "Unknown location",
+                "redirect_url": job_url,
+                "created": created_at,
+            })
+        except Exception as error:
+            print(f"🔴 Skipping malformed Workable job at {company} ({token}): {error}")
+            continue
+
+    return listings
+
+
+def _fetch_ashby(company, token, now):
+    listings = []
+    try:
+        response = requests.get(
+            ASHBY_URL_TEMPLATE.format(token=quote(token, safe="")),
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        print(f"🔴 Error fetching Ashby board for {company} ({token}): {error}")
+        return listings
+
+    for job in payload.get("jobs", []):
+        try:
+            title = job.get("title", "")
+            if not _matches_title(title):
+                continue
+
+            published_raw = job.get("publishedAt")
+            if not published_raw:
+                continue
+            created_at = datetime.fromisoformat(published_raw.replace("Z", "+00:00"))
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            created_at = created_at.astimezone(timezone.utc)
+            if not _in_window(created_at, now):
+                continue
+
+            job_id = job.get("id")
+            job_url = job.get("jobUrl") or job.get("applyUrl")
+            if not job_id or not job_url:
+                continue
+
+            listings.append({
+                "id": f"ashby:{token}:{job_id}",
+                "title": title,
+                "company": company,
+                "location": job.get("location", "Unknown location"),
+                "redirect_url": job_url,
+                "created": created_at,
+            })
+        except Exception as error:
+            print(f"🔴 Skipping malformed Ashby job at {company} ({token}): {error}")
+            continue
+
+    return listings
+
+
+def _parse_workday_posted_age_hours(posted_on):
+    # e.g. "Posted Today", "Posted Yesterday", "Posted 3 Days Ago", "Posted 30+ Days Ago"
+    lowered = posted_on.lower().replace("posted", "").strip()
+    if lowered in WORKDAY_POSTED_AGE_HOURS:
+        return WORKDAY_POSTED_AGE_HOURS[lowered]
+    match = re.match(r"(\d+)\+?\s*days?\s*ago", lowered)
+    if match:
+        return int(match.group(1)) * 24
+    return None
+
+
+def _fetch_workday(company, tenant, dc, site, now):
+    listings = []
+    try:
+        response = requests.post(
+            WORKDAY_SEARCH_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site),
+            json={"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "marketing intern"},
+            headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        print(f"🔴 Error fetching Workday board for {company} ({tenant}): {error}")
+        return listings
+
+    for job in payload.get("jobPostings", []):
+        try:
+            title = job.get("title", "")
+            if not _matches_title(title):
+                continue
+
+            posted_on = job.get("postedOn")
+            if not posted_on:
+                continue
+            age_hours = _parse_workday_posted_age_hours(posted_on)
+            if age_hours is None:
+                continue
+            # Approximate: Workday only gives a coarse bucket, not an exact
+            # timestamp, so this is a best-effort estimate within that bucket.
+            created_at = now - timedelta(hours=age_hours)
+            if not _in_window(created_at, now):
+                continue
+
+            external_path = job.get("externalPath")
+            bullet_fields = job.get("bulletFields") or []
+            job_id = bullet_fields[0] if bullet_fields else external_path
+            if not job_id or not external_path:
+                continue
+
+            listings.append({
+                "id": f"workday:{tenant}:{job_id}",
+                "title": title,
+                "company": company,
+                "location": job.get("locationsText", "Unknown location"),
+                "redirect_url": WORKDAY_JOB_BASE_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site) + external_path,
+                "created": created_at,
+            })
+        except Exception as error:
+            print(f"🔴 Skipping malformed Workday job at {company} ({tenant}): {error}")
+            continue
+
+    return listings
+
+
 def fetch_new_marketing_internships():
     """
     Polls every company's Greenhouse/Lever board in company_boards.json for
@@ -202,14 +378,19 @@ def fetch_new_marketing_internships():
     for entry in companies:
         company = entry["company"]
         platform = entry["platform"]
-        token = entry["token"]
 
         if platform == "greenhouse":
-            listings.extend(_fetch_greenhouse(company, token, now))
+            listings.extend(_fetch_greenhouse(company, entry["token"], now))
         elif platform == "lever":
-            listings.extend(_fetch_lever(company, token, now))
+            listings.extend(_fetch_lever(company, entry["token"], now))
         elif platform == "amazon":
             listings.extend(_fetch_amazon(now))
+        elif platform == "workable":
+            listings.extend(_fetch_workable(company, entry["token"], now))
+        elif platform == "ashby":
+            listings.extend(_fetch_ashby(company, entry["token"], now))
+        elif platform == "workday":
+            listings.extend(_fetch_workday(company, entry["tenant"], entry["dc"], entry["site"], now))
         else:
             print(f"🔴 Unknown platform '{platform}' for {company}, skipping")
 
