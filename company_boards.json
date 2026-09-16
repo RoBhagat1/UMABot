@@ -30,6 +30,11 @@
     "token": "allegiantair"
   },
   {
+    "company": "Amazon",
+    "platform": "amazon",
+    "token": ""
+  },
+  {
     "company": "Authentic Brands Group",
     "platform": "greenhouse",
     "token": "authenticbrandsgroup"
@@ -45,14 +50,14 @@
     "token": "axogen"
   },
   {
-    "company": "Bandwidth",
-    "platform": "greenhouse",
-    "token": "bandwidth"
-  },
-  {
     "company": "BARK",
     "platform": "greenhouse",
     "token": "bark"
+  },
+  {
+    "company": "Bandwidth",
+    "platform": "greenhouse",
+    "token": "bandwidth"
   },
   {
     "company": "Behaviour Interactive",
@@ -95,6 +100,16 @@
     "token": "casetify"
   },
   {
+    "company": "CLEAR",
+    "platform": "greenhouse",
+    "token": "clear"
+  },
+  {
+    "company": "COFRA Holding",
+    "platform": "greenhouse",
+    "token": "cofraholding"
+  },
+  {
     "company": "Celonis",
     "platform": "greenhouse",
     "token": "celonis"
@@ -110,19 +125,9 @@
     "token": "dxacirca"
   },
   {
-    "company": "CLEAR",
-    "platform": "greenhouse",
-    "token": "clear"
-  },
-  {
     "company": "Cloudflare",
     "platform": "greenhouse",
     "token": "cloudflare"
-  },
-  {
-    "company": "COFRA Holding",
-    "platform": "greenhouse",
-    "token": "cofraholding"
   },
   {
     "company": "CoinGecko",
@@ -148,6 +153,11 @@
     "company": "CourtAvenue",
     "platform": "lever",
     "token": "court-avenue"
+  },
+  {
+    "company": "DEPT\u00ae",
+    "platform": "greenhouse",
+    "token": "dept"
   },
   {
     "company": "Databento",
@@ -185,11 +195,6 @@
     "token": "denverbroncosteamllc"
   },
   {
-    "company": "DEPT\u00ae",
-    "platform": "greenhouse",
-    "token": "dept"
-  },
-  {
     "company": "Detroit Lions",
     "platform": "greenhouse",
     "token": "detroitlions"
@@ -208,11 +213,6 @@
     "company": "Dream Games",
     "platform": "lever",
     "token": "dreamgames"
-  },
-  {
-    "company": "e.l.f. Beauty",
-    "platform": "lever",
-    "token": "elfbeauty"
   },
   {
     "company": "Endpoint Clinical",
@@ -255,14 +255,14 @@
     "token": "forthea"
   },
   {
-    "company": "Galaxy Digital",
-    "platform": "greenhouse",
-    "token": "galaxydigitalservices"
-  },
-  {
     "company": "GCM Grosvenor",
     "platform": "greenhouse",
     "token": "gcmgrosvenor"
+  },
+  {
+    "company": "Galaxy Digital",
+    "platform": "greenhouse",
+    "token": "galaxydigitalservices"
   },
   {
     "company": "GeoComply",
@@ -310,6 +310,11 @@
     "token": "gusto"
   },
   {
+    "company": "HCVT",
+    "platform": "lever",
+    "token": "hcvt"
+  },
+  {
     "company": "HackerRank",
     "platform": "greenhouse",
     "token": "hackerrank"
@@ -318,11 +323,6 @@
     "company": "Harry's",
     "platform": "greenhouse",
     "token": "harrys"
-  },
-  {
-    "company": "HCVT",
-    "platform": "lever",
-    "token": "hcvt"
   },
   {
     "company": "Hightouch",
@@ -385,14 +385,19 @@
     "token": "m18"
   },
   {
-    "company": "Match Group",
-    "platform": "lever",
-    "token": "matchgroup"
-  },
-  {
     "company": "MCA Connect",
     "platform": "lever",
     "token": "mcaconnect"
+  },
+  {
+    "company": "MLB",
+    "platform": "greenhouse",
+    "token": "mlbevents"
+  },
+  {
+    "company": "Match Group",
+    "platform": "lever",
+    "token": "matchgroup"
   },
   {
     "company": "Mill",
@@ -410,11 +415,6 @@
     "token": "mirakl"
   },
   {
-    "company": "MLB",
-    "platform": "greenhouse",
-    "token": "mlbevents"
-  },
-  {
     "company": "Mosaic Group",
     "platform": "greenhouse",
     "token": "mosaicgroup"
@@ -423,6 +423,11 @@
     "company": "MyFitnessPal",
     "platform": "greenhouse",
     "token": "myfitnesspal"
+  },
+  {
+    "company": "NVE Experience Agency",
+    "platform": "greenhouse",
+    "token": "nve"
   },
   {
     "company": "Naked Farmer Careers",
@@ -438,11 +443,6 @@
     "company": "Novara",
     "platform": "lever",
     "token": "novara"
-  },
-  {
-    "company": "NVE Experience Agency",
-    "platform": "greenhouse",
-    "token": "nve"
   },
   {
     "company": "Olaplex",
@@ -505,14 +505,14 @@
     "token": "reltio"
   },
   {
-    "company": "Samsung Semiconductor",
-    "platform": "greenhouse",
-    "token": "samsungsemiconductor"
-  },
-  {
     "company": "SFMOMA",
     "platform": "lever",
     "token": "sfmoma"
+  },
+  {
+    "company": "Samsung Semiconductor",
+    "platform": "greenhouse",
+    "token": "samsungsemiconductor"
   },
   {
     "company": "Signifyd",
@@ -625,14 +625,14 @@
     "token": "vestiairecollective"
   },
   {
-    "company": "Weber Shandwick",
-    "platform": "greenhouse",
-    "token": "webershandwick"
-  },
-  {
     "company": "WebFX",
     "platform": "lever",
     "token": "webfx"
+  },
+  {
+    "company": "Weber Shandwick",
+    "platform": "greenhouse",
+    "token": "webershandwick"
   },
   {
     "company": "Webstacks",
@@ -668,5 +668,10 @@
     "company": "Zoox",
     "platform": "lever",
     "token": "zoox"
+  },
+  {
+    "company": "e.l.f. Beauty",
+    "platform": "lever",
+    "token": "elfbeauty"
   }
 ]

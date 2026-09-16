@@ -8,6 +8,8 @@ import requests
 COMPANY_BOARDS_PATH = os.path.join(os.path.dirname(__file__), "company_boards.json")
 GREENHOUSE_URL_TEMPLATE = "https://boards-api.greenhouse.io/v1/boards/{token}/jobs"
 LEVER_URL_TEMPLATE = "https://api.lever.co/v0/postings/{token}?mode=json"
+AMAZON_SEARCH_URL = "https://www.amazon.jobs/en/search.json"
+AMAZON_BASE_JOB_URL = "https://www.amazon.jobs"
 MIN_AGE_HOURS = 0
 MAX_AGE_HOURS = 24
 # Matches "intern", "interns", "internship", "internships" as whole words —
@@ -130,6 +132,58 @@ def _fetch_lever(company, token, now):
     return listings
 
 
+def _fetch_amazon(now):
+    listings = []
+    try:
+        response = requests.get(
+            AMAZON_SEARCH_URL,
+            params={"base_query": "marketing intern", "result_limit": 50},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        print(f"🔴 Error fetching Amazon job board: {error}")
+        return listings
+
+    for job in payload.get("jobs", []):
+        try:
+            title = job.get("title", "")
+            if not _matches_title(title):
+                continue
+
+            posted_raw = job.get("posted_date")
+            if not posted_raw:
+                continue
+            # Amazon gives a date only (no time), e.g. "September 14, 2026" —
+            # treat it as midnight UTC. This means our 24h window has up to
+            # a day of imprecision for Amazon listings specifically, since
+            # we don't know the actual time of day they posted.
+            created_at = datetime.strptime(posted_raw, "%B %d, %Y").replace(tzinfo=timezone.utc)
+            if not _in_window(created_at, now):
+                continue
+
+            job_path = job.get("job_path")
+            job_id = job.get("id")
+            if not job_id or not job_path:
+                continue
+
+            listings.append({
+                "id": f"amazon:{job_id}",
+                "title": title,
+                "company": "Amazon",
+                "location": job.get("normalized_location", "Unknown location"),
+                "redirect_url": AMAZON_BASE_JOB_URL + job_path,
+                "created": created_at,
+            })
+        except Exception as error:
+            print(f"🔴 Skipping malformed Amazon job: {error}")
+            continue
+
+    return listings
+
+
 def fetch_new_marketing_internships():
     """
     Polls every company's Greenhouse/Lever board in company_boards.json for
@@ -154,6 +208,8 @@ def fetch_new_marketing_internships():
             listings.extend(_fetch_greenhouse(company, token, now))
         elif platform == "lever":
             listings.extend(_fetch_lever(company, token, now))
+        elif platform == "amazon":
+            listings.extend(_fetch_amazon(now))
         else:
             print(f"🔴 Unknown platform '{platform}' for {company}, skipping")
 
