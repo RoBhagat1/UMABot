@@ -104,16 +104,15 @@ def birthday_job():
             conn.close()
 
 
+INTERNSHIP_CTA = "Check out other resources (jobright.ai) to find out more!"
+
+
 def internship_digest_job():
     print("--- Running Internship Digest Job ---")
     try:
         listings = fetch_new_marketing_internships()
     except Exception as error:
         print(f"🔴 Error fetching internship listings from job boards: {error}")
-        return
-
-    if not listings:
-        print("--- No new qualifying internship listings found. Skipping. ---")
         return
 
     conn = None
@@ -129,16 +128,13 @@ def internship_digest_job():
         already_sent = {row[0] for row in cur.fetchall()}
         new_listings = [listing for listing in listings if listing["id"] not in already_sent]
 
-        if not new_listings:
-            print("--- All fetched listings were already sent. Skipping. ---")
-            return
-
         for listing in new_listings:
             cur.execute(
                 "INSERT INTO sent_internship_listings (listing_id) VALUES (%s) ON CONFLICT DO NOTHING",
                 (listing["id"],)
             )
-        conn.commit()
+        if new_listings:
+            conn.commit()
 
         cur.execute("SELECT user_id FROM internship_subscribers WHERE status = 'subscribed'")
         subscriber_ids = [row[0] for row in cur.fetchall()]
@@ -152,15 +148,25 @@ def internship_digest_job():
         if conn is not None:
             conn.close()
 
-    if not new_listings or not subscriber_ids:
+    if not subscriber_ids:
         print("--- No subscribers to notify. ---")
         return
 
-    digest_lines = [
-        f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
-        for listing in new_listings
-    ]
-    digest_text = "📋 *New marketing internships (posted in the last 24 hours):*\n\n" + "\n\n".join(digest_lines)
+    if new_listings:
+        digest_lines = [
+            f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
+            for listing in new_listings
+        ]
+        digest_text = (
+            "📋 *New marketing internships (posted in the last 24 hours):*\n\n"
+            + "\n\n".join(digest_lines)
+            + f"\n\nThese aren't all of the jobs opened today! {INTERNSHIP_CTA}"
+        )
+    else:
+        digest_text = (
+            "There weren't any new marketing internships in the list I checked today! "
+            + INTERNSHIP_CTA
+        )
 
     for user_id in subscriber_ids:
         try:
