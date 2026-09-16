@@ -30,6 +30,67 @@ MAX_AGE_HOURS = 24
 # at a word boundary, e.g. right after "intern" or right after "internship").
 INTERN_PATTERN = re.compile(r"\bintern(s|ship|ships)?\b", re.IGNORECASE)
 
+US_STATE_ABBREVIATIONS = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
+    "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
+    "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+    "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+    "WI", "WY", "DC",
+}
+US_STATE_NAMES = {
+    "alabama", "alaska", "arizona", "arkansas", "california", "colorado",
+    "connecticut", "delaware", "florida", "georgia", "hawaii", "idaho",
+    "illinois", "indiana", "iowa", "kansas", "kentucky", "louisiana",
+    "maine", "maryland", "massachusetts", "michigan", "minnesota",
+    "mississippi", "missouri", "montana", "nebraska", "nevada",
+    "new hampshire", "new jersey", "new mexico", "new york",
+    "north carolina", "north dakota", "ohio", "oklahoma", "oregon",
+    "pennsylvania", "rhode island", "south carolina", "south dakota",
+    "tennessee", "texas", "utah", "vermont", "virginia", "washington",
+    "west virginia", "wisconsin", "wyoming",
+}
+US_INDICATOR_PATTERN = re.compile(r"\b(usa|u\.s\.a\.?|united states|u\.s\.)\b", re.IGNORECASE)
+US_STATE_SUFFIX_PATTERN = re.compile(
+    r",\s*(" + "|".join(US_STATE_ABBREVIATIONS) + r")\b"
+)
+NON_US_COUNTRY_PATTERN = re.compile(
+    r"\b("
+    r"canada|mexico|united kingdom|england|scotland|wales|\buk\b|ireland|"
+    r"france|germany|spain|italy|netherlands|belgium|switzerland|austria|"
+    r"poland|portugal|sweden|norway|denmark|finland|czech|hungary|romania|"
+    r"greece|india|china|japan|korea|singapore|malaysia|philippines|"
+    r"indonesia|vietnam|thailand|hong kong|taiwan|australia|new zealand|"
+    r"brazil|argentina|chile|colombia|peru|south africa|nigeria|kenya|"
+    r"\buae\b|dubai|saudi|israel|turkey|russia|ukraine"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _is_us_location(location):
+    """
+    Heuristic US-location filter based on free-text location strings, since
+    the platforms don't consistently expose a clean structured country
+    field. Defaults to excluding ambiguous/ungeocodable text (e.g. bare
+    "Remote" with no country hint) rather than including it — erring
+    toward under- rather than over-inclusion, since the requirement is
+    strictly US-only.
+    """
+    if not location:
+        return False
+    if NON_US_COUNTRY_PATTERN.search(location):
+        return False
+    if US_INDICATOR_PATTERN.search(location):
+        return True
+    if US_STATE_SUFFIX_PATTERN.search(location):
+        return True
+    lowered = location.lower()
+    if any(state in lowered for state in US_STATE_NAMES):
+        return True
+    if re.search(r"remote.*\bus\b", lowered):
+        return True
+    return False
+
 
 def _load_company_boards():
     with open(COMPANY_BOARDS_PATH) as f:
@@ -79,6 +140,8 @@ def _fetch_greenhouse(company, token, now):
 
             location_obj = job.get("location")
             location_name = location_obj.get("name", "Unknown location") if location_obj else "Unknown location"
+            if not _is_us_location(location_name):
+                continue
 
             listings.append({
                 "id": f"gh:{token}:{job_id}",
@@ -128,6 +191,8 @@ def _fetch_lever(company, token, now):
 
             categories = job.get("categories") or {}
             location_name = categories.get("location", "Unknown location")
+            if not _is_us_location(location_name):
+                continue
 
             listings.append({
                 "id": f"lever:{token}:{job_id}",
@@ -149,7 +214,7 @@ def _fetch_amazon(now):
     try:
         response = requests.get(
             AMAZON_SEARCH_URL,
-            params={"base_query": "marketing intern", "result_limit": 50},
+            params={"base_query": "marketing intern", "result_limit": 50, "country": "USA"},
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=15,
         )
@@ -181,11 +246,17 @@ def _fetch_amazon(now):
             if not job_id or not job_path:
                 continue
 
+            location_name = job.get("normalized_location", "Unknown location")
+            country_code = job.get("country_code")
+            is_us = country_code == "USA" if country_code else _is_us_location(location_name)
+            if not is_us:
+                continue
+
             listings.append({
                 "id": f"amazon:{job_id}",
                 "title": title,
                 "company": "Amazon",
-                "location": job.get("normalized_location", "Unknown location"),
+                "location": location_name,
                 "redirect_url": AMAZON_BASE_JOB_URL + job_path,
                 "created": created_at,
             })
@@ -230,12 +301,18 @@ def _fetch_workable(company, token, now):
             if not job_shortcode or not job_url:
                 continue
 
+            location_name = (
+                job.get("location", {}).get("location_str", "Unknown location")
+                if isinstance(job.get("location"), dict) else "Unknown location"
+            )
+            if not _is_us_location(location_name):
+                continue
+
             listings.append({
                 "id": f"workable:{token}:{job_shortcode}",
                 "title": title,
                 "company": company,
-                "location": job.get("location", {}).get("location_str", "Unknown location")
-                if isinstance(job.get("location"), dict) else "Unknown location",
+                "location": location_name,
                 "redirect_url": job_url,
                 "created": created_at,
             })
@@ -280,11 +357,15 @@ def _fetch_ashby(company, token, now):
             if not job_id or not job_url:
                 continue
 
+            location_name = job.get("location", "Unknown location")
+            if not _is_us_location(location_name):
+                continue
+
             listings.append({
                 "id": f"ashby:{token}:{job_id}",
                 "title": title,
                 "company": company,
-                "location": job.get("location", "Unknown location"),
+                "location": location_name,
                 "redirect_url": job_url,
                 "created": created_at,
             })
@@ -345,11 +426,15 @@ def _fetch_workday(company, tenant, dc, site, now):
             if not job_id or not external_path:
                 continue
 
+            location_name = job.get("locationsText", "Unknown location")
+            if not _is_us_location(location_name):
+                continue
+
             listings.append({
                 "id": f"workday:{tenant}:{job_id}",
                 "title": title,
                 "company": company,
-                "location": job.get("locationsText", "Unknown location"),
+                "location": location_name,
                 "redirect_url": WORKDAY_JOB_BASE_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site) + external_path,
                 "created": created_at,
             })
