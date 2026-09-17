@@ -29,6 +29,15 @@ MAX_AGE_HOURS = 24
 # on "intern" false-positives on those; this regex requires the match to end
 # at a word boundary, e.g. right after "intern" or right after "internship").
 INTERN_PATTERN = re.compile(r"\bintern(s|ship|ships)?\b", re.IGNORECASE)
+# Marketing-adjacent title keywords — a strict "marketing" only match misses
+# real marketing-field roles titled things like "Communications Intern" or
+# "Promotion & Publicity Intern" that don't literally say "marketing".
+MARKETING_KEYWORDS_PATTERN = re.compile(
+    r"\b(marketing|brand|branding|communications?|public relations|"
+    r"social media|digital media|content|promotion|publicity|growth|"
+    r"campaign|creative|advertising)\b",
+    re.IGNORECASE,
+)
 
 US_STATE_ABBREVIATIONS = {
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
@@ -98,8 +107,7 @@ def _load_company_boards():
 
 
 def _matches_title(title):
-    lowered = title.lower()
-    return "marketing" in lowered and bool(INTERN_PATTERN.search(title))
+    return bool(MARKETING_KEYWORDS_PATTERN.search(title)) and bool(INTERN_PATTERN.search(title))
 
 
 def _in_window(created_at, now):

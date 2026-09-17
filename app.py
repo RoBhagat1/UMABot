@@ -19,6 +19,15 @@ if __name__ == "__main__":
     # scheduler.add_job(daily_bonus_job, 'cron', hour=0, minute=0)
     scheduler.add_job(birthday_job, 'cron', hour=9, minute=45)
     scheduler.add_job(internship_digest_job, 'cron', hour=12, minute=0)
+    # Slack's Socket Mode connection has been observed to silently stop
+    # receiving events after some hours, with no crash and no error logged
+    # — the process stays "alive" but the bot becomes fully unresponsive.
+    # A forced periodic restart is a defensive workaround: Fly restarts the
+    # machine automatically whenever the process exits, so exiting here on
+    # a schedule guarantees the connection gets refreshed periodically
+    # rather than staying silently dead until someone notices and manually
+    # restarts it.
+    scheduler.add_job(lambda: os._exit(1), 'interval', hours=4)
     scheduler.start()
     print("⏰ Scheduler started. All jobs are scheduled.")
 
