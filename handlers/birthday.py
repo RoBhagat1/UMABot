@@ -80,7 +80,17 @@ def handle_birthday_setup_message(message, say, client):
 
 
 def is_birthday_dm(message):
-    return message.get('channel_type') == 'im' and 'text' in message and 'bot_id' not in message
+    if message.get('channel_type') != 'im' or 'text' not in message or 'bot_id' in message:
+        return False
+    # Bolt only runs the first listener whose matcher passes for a given
+    # message — it never falls through to try the next one. This matcher
+    # used to match ANY DM unconditionally, which meant it silently
+    # swallowed every DM reply (including ones meant for other DM-reply
+    # listeners, like handlers/internships.py's yes/no handler) before
+    # they ever got a chance to run. Requiring the actual MM/DD pattern
+    # here — not just inside the handler body — lets non-birthday DMs
+    # fall through to later listeners.
+    return bool(BIRTHDAY_PATTERN.match(message['text']))
 
 
 @app.message(matchers=[is_birthday_dm])
