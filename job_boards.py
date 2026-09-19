@@ -13,6 +13,11 @@ AMAZON_SEARCH_URL = "https://www.amazon.jobs/en/search.json"
 AMAZON_BASE_JOB_URL = "https://www.amazon.jobs"
 WORKABLE_URL_TEMPLATE = "https://apply.workable.com/api/v1/widget/accounts/{token}"
 ASHBY_URL_TEMPLATE = "https://api.ashbyhq.com/posting-api/job-board/{token}"
+# A handful of large employers (AMD, Keysight, JHU APL, Rivian, Garmin) run
+# career sites on a common third-party career-site platform (fronting their
+# actual ATS, e.g. iCIMS) that exposes this same JSON endpoint shape on the
+# company's own custom domain.
+CAREER_SITE_API_URL_TEMPLATE = "https://{host}/api/jobs?limit=100"
 WORKDAY_SEARCH_URL_TEMPLATE = "https://{tenant}.{dc}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs"
 WORKDAY_JOB_BASE_URL_TEMPLATE = "https://{tenant}.{dc}.myworkdayjobs.com/{site}"
 # Workday only gives a coarse relative "posted" bucket, not an exact
@@ -384,6 +389,64 @@ def _fetch_ashby(company, token, now):
     return listings
 
 
+def _fetch_career_site_api(company, host, now):
+    listings = []
+    try:
+        response = requests.get(
+            CAREER_SITE_API_URL_TEMPLATE.format(host=host),
+            timeout=15,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        print(f"🔴 Error fetching career-site-api board for {company} ({host}): {error}")
+        return listings
+
+    # Results come back sorted newest-first; the top 100 comfortably covers
+    # the 24h window for every company observed on this platform so far.
+    for job in payload.get("jobs", []):
+        try:
+            data = job.get("data", {})
+            title = data.get("title", "")
+            if not _matches_title(title):
+                continue
+
+            posted_raw = data.get("posted_date")
+            if not posted_raw:
+                continue
+            created_at = datetime.fromisoformat(posted_raw.replace("Z", "+00:00"))
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            created_at = created_at.astimezone(timezone.utc)
+            if not _in_window(created_at, now):
+                continue
+
+            job_id = data.get("req_id")
+            job_url = data.get("apply_url")
+            if not job_id or not job_url:
+                continue
+
+            location_name = data.get("full_location") or ", ".join(
+                part for part in [data.get("city"), data.get("state"), data.get("country")] if part
+            )
+            if not _is_us_location(location_name):
+                continue
+
+            listings.append({
+                "id": f"career_site_api:{host}:{job_id}",
+                "title": title,
+                "company": company,
+                "location": location_name,
+                "redirect_url": job_url,
+                "created": created_at,
+            })
+        except Exception as error:
+            print(f"🔴 Skipping malformed career-site-api job at {company} ({host}): {error}")
+            continue
+
+    return listings
+
+
 def _parse_workday_posted_age_hours(posted_on):
     # e.g. "Posted Today", "Posted Yesterday", "Posted 3 Days Ago", "Posted 30+ Days Ago"
     lowered = posted_on.lower().replace("posted", "").strip()
@@ -484,6 +547,8 @@ def fetch_new_marketing_internships():
             listings.extend(_fetch_ashby(company, entry["token"], now))
         elif platform == "workday":
             listings.extend(_fetch_workday(company, entry["tenant"], entry["dc"], entry["site"], now))
+        elif platform == "career_site_api":
+            listings.extend(_fetch_career_site_api(company, entry["host"], now))
         else:
             print(f"🔴 Unknown platform '{platform}' for {company}, skipping")
 
