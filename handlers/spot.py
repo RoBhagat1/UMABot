@@ -488,8 +488,8 @@ def handle_spot_help_command(message, say):
 • `alltimecaughtboard`: Show the all-time leaderboard of most spotted players.
 • `reset`: Manually end the current season and start a new one (admin only).
 • `birthday setup`: DMs everyone without a birthday on file to ask for it (admin only). Add `@user`s to only DM specific people, e.g. `birthday setup @alice @bob`. Reply to the DM with your birthday as MM/DD.
-• `internship ask`: DMs everyone without an answer on file to ask if they want daily marketing internship alerts (admin only). Add `@user`s to only DM specific people, e.g. `internship ask @alice @bob`. Reply to the DM with yes/no.
-• `internship unsubscribe`: Stop receiving daily marketing internship alert DMs.
+• `internship ask`: DMs everyone with a missing answer, asking yes/no about each internship/new-grad category (marketing, product management, design) they haven't answered yet, one at a time (admin only). Add `@user`s to only DM specific people, e.g. `internship ask @alice @bob`.
+• `internship unsubscribe`: Stop receiving all internship/new-grad alert DMs.
 • `miss you @user` or `i miss u @user`: Shows a random past spot picture of the mentioned user.
 • `mystats`: Shows your personal spotting stats in this channel.
 • `explode @user`: Overlays a random explosion on a random spot picture of the mentioned user.

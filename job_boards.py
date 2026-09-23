@@ -34,6 +34,13 @@ MAX_AGE_HOURS = 24
 # on "intern" false-positives on those; this regex requires the match to end
 # at a word boundary, e.g. right after "intern" or right after "internship").
 INTERN_PATTERN = re.compile(r"\bintern(s|ship|ships)?\b", re.IGNORECASE)
+# New-grad-level roles never say "intern" — they use one of these instead.
+NEW_GRAD_PATTERN = re.compile(
+    r"\b(new grad(uate)?s?|recent grad(uate)?s?|early career|"
+    r"entry[- ]level|class of 20\d{2}|university grad(uate)?s?|"
+    r"campus hire)\b",
+    re.IGNORECASE,
+)
 # Marketing-adjacent title keywords — a strict "marketing" only match misses
 # real marketing-field roles titled things like "Communications Intern" or
 # "Promotion & Publicity Intern" that don't literally say "marketing".
@@ -43,6 +50,80 @@ MARKETING_KEYWORDS_PATTERN = re.compile(
     r"campaign|creative|advertising)\b",
     re.IGNORECASE,
 )
+PM_KEYWORDS_PATTERN = re.compile(
+    r"\b(product manager|product management|product owner|"
+    r"associate product manager|\bapm\b|technical product manager|"
+    r"product analyst)\b",
+    re.IGNORECASE,
+)
+DESIGN_KEYWORDS_PATTERN = re.compile(
+    r"\b(design|designer|ux|ui|user experience|user interface)\b",
+    re.IGNORECASE,
+)
+
+# Each category is a (field, level) pair. A title has to match both the
+# field's keyword pattern and the level's pattern to count — e.g. a
+# "marketing_intern" match needs a marketing-adjacent word AND "intern"
+# somewhere in the title. Adding a new field or level means adding it to
+# FIELD_PATTERNS/LEVEL_PATTERNS and one entry per new combination here — no
+# schema change, since subscriptions are stored generically in
+# internship_subscriptions keyed by each category's "key" string. Order
+# matters: it's the order categories are asked about in the sequential
+# opt-in DM flow (see handlers/internships.py).
+FIELD_PATTERNS = {
+    "marketing": MARKETING_KEYWORDS_PATTERN,
+    "pm": PM_KEYWORDS_PATTERN,
+    "design": DESIGN_KEYWORDS_PATTERN,
+}
+LEVEL_PATTERNS = {
+    "intern": INTERN_PATTERN,
+    "newgrad": NEW_GRAD_PATTERN,
+}
+CATEGORIES = [
+    {
+        "key": "marketing_intern",
+        "label": "marketing intern",
+        "field": "marketing",
+        "level": "intern",
+        "ask_text": "Want daily alerts about new marketing internships (posted in the last 24 hours)?",
+    },
+    {
+        "key": "marketing_newgrad",
+        "label": "marketing new grad",
+        "field": "marketing",
+        "level": "newgrad",
+        "ask_text": "Want daily alerts about new marketing new-grad roles (posted in the last 24 hours)?",
+    },
+    {
+        "key": "pm_intern",
+        "label": "product management intern",
+        "field": "pm",
+        "level": "intern",
+        "ask_text": "Want daily alerts about new product management internships (posted in the last 24 hours)?",
+    },
+    {
+        "key": "pm_newgrad",
+        "label": "product management new grad",
+        "field": "pm",
+        "level": "newgrad",
+        "ask_text": "Want daily alerts about new product management new-grad roles (posted in the last 24 hours)?",
+    },
+    {
+        "key": "design_intern",
+        "label": "design intern",
+        "field": "design",
+        "level": "intern",
+        "ask_text": "Want daily alerts about new design internships (posted in the last 24 hours)?",
+    },
+    {
+        "key": "design_newgrad",
+        "label": "design new grad",
+        "field": "design",
+        "level": "newgrad",
+        "ask_text": "Want daily alerts about new design new-grad roles (posted in the last 24 hours)?",
+    },
+]
+CATEGORY_KEYS = [c["key"] for c in CATEGORIES]
 
 US_STATE_ABBREVIATIONS = {
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
@@ -111,8 +192,19 @@ def _load_company_boards():
         return json.load(f)
 
 
-def _matches_title(title):
-    return bool(MARKETING_KEYWORDS_PATTERN.search(title)) and bool(INTERN_PATTERN.search(title))
+def _matched_categories(title):
+    """
+    Returns the list of category keys whose (field, level) pair both match
+    this title. A title can match more than one category — e.g. "Product
+    Marketing Intern" matches both "marketing_intern" and "pm_intern"; a
+    title can't match both an intern and a new-grad category unless it
+    genuinely mentions both (rare, harmless if it does).
+    """
+    matched = []
+    for cat in CATEGORIES:
+        if FIELD_PATTERNS[cat["field"]].search(title) and LEVEL_PATTERNS[cat["level"]].search(title):
+            matched.append(cat["key"])
+    return matched
 
 
 def _in_window(created_at, now):
@@ -134,7 +226,8 @@ def _fetch_greenhouse(company, token, now):
     for job in payload.get("jobs", []):
         try:
             title = job.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             published_raw = job.get("first_published")
@@ -163,6 +256,7 @@ def _fetch_greenhouse(company, token, now):
                 "location": location_name,
                 "redirect_url": job.get("absolute_url", ""),
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Greenhouse job at {company} ({token}): {error}")
@@ -188,7 +282,8 @@ def _fetch_lever(company, token, now):
     for job in payload:
         try:
             title = job.get("text", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             created_ms = job.get("createdAt")
@@ -202,8 +297,8 @@ def _fetch_lever(company, token, now):
             if not job_id:
                 continue
 
-            categories = job.get("categories") or {}
-            location_name = categories.get("location", "Unknown location")
+            lever_categories = job.get("categories") or {}
+            location_name = lever_categories.get("location", "Unknown location")
             if not _is_us_location(location_name):
                 continue
 
@@ -214,6 +309,7 @@ def _fetch_lever(company, token, now):
                 "location": location_name,
                 "redirect_url": job.get("hostedUrl", ""),
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Lever job at {company} ({token}): {error}")
@@ -224,23 +320,38 @@ def _fetch_lever(company, token, now):
 
 def _fetch_amazon(now):
     listings = []
-    try:
-        response = requests.get(
-            AMAZON_SEARCH_URL,
-            params={"base_query": "marketing intern", "result_limit": 50, "country": "USA"},
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=15,
-        )
-        response.raise_for_status()
-        payload = response.json()
-    except Exception as error:
-        print(f"🔴 Error fetching Amazon job board: {error}")
-        return listings
+    # Amazon's search is a server-side keyword filter, unlike every other
+    # platform here which returns its full job list for client-side
+    # filtering — so it has to be queried once per level (intern vs new
+    # grad) to avoid a single "intern" query silently excluding new-grad
+    # postings that never say "intern". Results are deduped by job id.
+    seen_job_ids = set()
+    all_jobs = []
+    for query in ("intern", "new grad"):
+        try:
+            response = requests.get(
+                AMAZON_SEARCH_URL,
+                params={"base_query": query, "result_limit": 50, "country": "USA"},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except Exception as error:
+            print(f"🔴 Error fetching Amazon job board (query='{query}'): {error}")
+            continue
 
-    for job in payload.get("jobs", []):
+        for job in payload.get("jobs", []):
+            job_id = job.get("id")
+            if job_id and job_id not in seen_job_ids:
+                seen_job_ids.add(job_id)
+                all_jobs.append(job)
+
+    for job in all_jobs:
         try:
             title = job.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             posted_raw = job.get("posted_date")
@@ -272,6 +383,7 @@ def _fetch_amazon(now):
                 "location": location_name,
                 "redirect_url": AMAZON_BASE_JOB_URL + job_path,
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Amazon job: {error}")
@@ -296,7 +408,8 @@ def _fetch_workable(company, token, now):
     for job in payload.get("jobs", []):
         try:
             title = job.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             created_raw = job.get("published_on") or job.get("created_at")
@@ -328,6 +441,7 @@ def _fetch_workable(company, token, now):
                 "location": location_name,
                 "redirect_url": job_url,
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Workable job at {company} ({token}): {error}")
@@ -352,7 +466,8 @@ def _fetch_ashby(company, token, now):
     for job in payload.get("jobs", []):
         try:
             title = job.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             published_raw = job.get("publishedAt")
@@ -381,6 +496,7 @@ def _fetch_ashby(company, token, now):
                 "location": location_name,
                 "redirect_url": job_url,
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Ashby job at {company} ({token}): {error}")
@@ -408,7 +524,8 @@ def _fetch_career_site_api(company, host, now):
         try:
             data = job.get("data", {})
             title = data.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             posted_raw = data.get("posted_date")
@@ -439,6 +556,7 @@ def _fetch_career_site_api(company, host, now):
                 "location": location_name,
                 "redirect_url": job_url,
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed career-site-api job at {company} ({host}): {error}")
@@ -460,23 +578,36 @@ def _parse_workday_posted_age_hours(posted_on):
 
 def _fetch_workday(company, tenant, dc, site, now):
     listings = []
-    try:
-        response = requests.post(
-            WORKDAY_SEARCH_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site),
-            json={"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "marketing intern"},
-            headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
-            timeout=15,
-        )
-        response.raise_for_status()
-        payload = response.json()
-    except Exception as error:
-        print(f"🔴 Error fetching Workday board for {company} ({tenant}): {error}")
-        return listings
+    # Like Amazon, Workday's searchText is a server-side keyword filter, so
+    # it's queried once per level to avoid excluding new-grad postings that
+    # never say "intern". Results are deduped by external path.
+    seen_paths = set()
+    all_jobs = []
+    for query in ("intern", "new grad"):
+        try:
+            response = requests.post(
+                WORKDAY_SEARCH_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site),
+                json={"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": query},
+                headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except Exception as error:
+            print(f"🔴 Error fetching Workday board for {company} ({tenant}, query='{query}'): {error}")
+            continue
 
-    for job in payload.get("jobPostings", []):
+        for job in payload.get("jobPostings", []):
+            path = job.get("externalPath")
+            if path and path not in seen_paths:
+                seen_paths.add(path)
+                all_jobs.append(job)
+
+    for job in all_jobs:
         try:
             title = job.get("title", "")
-            if not _matches_title(title):
+            categories = _matched_categories(title)
+            if not categories:
                 continue
 
             posted_on = job.get("postedOn")
@@ -508,6 +639,7 @@ def _fetch_workday(company, tenant, dc, site, now):
                 "location": location_name,
                 "redirect_url": WORKDAY_JOB_BASE_URL_TEMPLATE.format(tenant=tenant, dc=dc, site=site) + external_path,
                 "created": created_at,
+                "categories": categories,
             })
         except Exception as error:
             print(f"🔴 Skipping malformed Workday job at {company} ({tenant}): {error}")
@@ -516,16 +648,17 @@ def _fetch_workday(company, tenant, dc, site, now):
     return listings
 
 
-def fetch_new_marketing_internships():
+def fetch_new_internships():
     """
-    Polls every company's Greenhouse/Lever board in company_boards.json for
-    job titles matching "marketing" and "intern", posted within the last 24
-    hours. Returns direct employer application links (no redirect/tracking
-    chain), unlike the previous Adzuna-based aggregator approach.
+    Polls every company board in company_boards.json once, and returns every
+    internship posting from the last 24 hours whose title matches at least
+    one entry in CATEGORIES. Each listing is tagged with every category key
+    it matches (e.g. "Product Marketing Intern" tags as both "marketing"
+    and "pm"), so callers can filter per-subscriber without re-scanning.
 
-    Returns a list of dicts: id, title, company, location, redirect_url, created.
-    A single company's fetch failure is logged and skipped — it does not
-    abort the scan of the remaining companies.
+    Returns a list of dicts: id, title, company, location, redirect_url,
+    created, categories. A single company's fetch failure is logged and
+    skipped — it does not abort the scan of the remaining companies.
     """
     now = datetime.now(timezone.utc)
     companies = _load_company_boards()

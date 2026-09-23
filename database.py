@@ -54,10 +54,19 @@ def setup_database():
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     """
-    internship_subscribers_table_command = """
-    CREATE TABLE IF NOT EXISTS internship_subscribers (
-        user_id TEXT PRIMARY KEY,
+    internship_subscriptions_table_command = """
+    CREATE TABLE IF NOT EXISTS internship_subscriptions (
+        user_id TEXT NOT NULL,
+        category TEXT NOT NULL,
         status TEXT NOT NULL CHECK (status IN ('subscribed', 'declined')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, category)
+    );
+    """
+    internship_ask_pending_table_command = """
+    CREATE TABLE IF NOT EXISTS internship_ask_pending (
+        user_id TEXT PRIMARY KEY,
+        pending_category TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     """
@@ -81,7 +90,8 @@ def setup_database():
         cur.execute(assassin_eliminations_table_command)
         cur.execute(channel_seasons_table_command)
         cur.execute(birthdays_table_command)
-        cur.execute(internship_subscribers_table_command)
+        cur.execute(internship_subscriptions_table_command)
+        cur.execute(internship_ask_pending_table_command)
         cur.execute(sent_internship_listings_table_command)
         conn.commit()
         print("✅ All database tables are ready.")

@@ -7,7 +7,7 @@ import pytz
 from bot import app
 from config import daily_bonus_users, BIRTHDAY_CHANNEL_ID
 from utils import get_user_name
-from job_boards import fetch_new_marketing_internships
+from job_boards import fetch_new_internships, CATEGORIES
 
 
 def daily_bonus_job():
@@ -105,12 +105,20 @@ def birthday_job():
 
 
 INTERNSHIP_CTA = "Check out other resources (jobright.ai) to find out more!"
+CATEGORY_LABELS = {c["key"]: c["label"] for c in CATEGORIES}
+
+
+def _join_labels(labels):
+    labels = sorted(labels)
+    if len(labels) == 1:
+        return labels[0]
+    return ", ".join(labels[:-1]) + f", and {labels[-1]}"
 
 
 def internship_digest_job():
     print("--- Running Internship Digest Job ---")
     try:
-        listings = fetch_new_marketing_internships()
+        listings = fetch_new_internships()
     except Exception as error:
         print(f"🔴 Error fetching internship listings from job boards: {error}")
         return
@@ -118,7 +126,7 @@ def internship_digest_job():
     conn = None
     cur = None
     new_listings = []
-    subscriber_ids = []
+    subscriptions_by_user = {}
     try:
         db_url = os.environ.get("DATABASE_URL")
         conn = psycopg2.connect(db_url)
@@ -136,8 +144,9 @@ def internship_digest_job():
         if new_listings:
             conn.commit()
 
-        cur.execute("SELECT user_id FROM internship_subscribers WHERE status = 'subscribed'")
-        subscriber_ids = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT user_id, category FROM internship_subscriptions WHERE status = 'subscribed'")
+        for user_id, category in cur.fetchall():
+            subscriptions_by_user.setdefault(user_id, set()).add(category)
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(f"🔴 Error in internship_digest_job (database phase): {error}")
@@ -148,27 +157,33 @@ def internship_digest_job():
         if conn is not None:
             conn.close()
 
-    if not subscriber_ids:
+    if not subscriptions_by_user:
         print("--- No subscribers to notify. ---")
         return
 
-    if new_listings:
-        digest_lines = [
-            f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
-            for listing in new_listings
+    for user_id, subscribed_categories in subscriptions_by_user.items():
+        matches = [
+            listing for listing in new_listings
+            if subscribed_categories & set(listing["categories"])
         ]
-        digest_text = (
-            "📋 *New marketing internships (posted in the last 24 hours):*\n\n"
-            + "\n\n".join(digest_lines)
-            + f"\n\nThese aren't all of the jobs opened today! {INTERNSHIP_CTA}"
-        )
-    else:
-        digest_text = (
-            "There weren't any new marketing internships in the list I checked today! "
-            + INTERNSHIP_CTA
-        )
 
-    for user_id in subscriber_ids:
+        if matches:
+            digest_lines = [
+                f"• *{listing['title']}* at {listing['company']} ({listing['location']})\n  {listing['redirect_url']}"
+                for listing in matches
+            ]
+            digest_text = (
+                "📋 *New internships (posted in the last 24 hours):*\n\n"
+                + "\n\n".join(digest_lines)
+                + f"\n\nThese aren't all of the jobs opened today! {INTERNSHIP_CTA}"
+            )
+        else:
+            category_names = _join_labels([CATEGORY_LABELS.get(c, c) for c in subscribed_categories])
+            digest_text = (
+                f"There weren't any new {category_names} roles in the list I checked today! "
+                + INTERNSHIP_CTA
+            )
+
         try:
             dm = app.client.conversations_open(users=user_id)
             dm_channel_id = dm['channel']['id']
