@@ -505,22 +505,37 @@ def _fetch_ashby(company, token, now):
     return listings
 
 
+CAREER_SITE_API_MAX_PAGES = 20  # 20 x 100 = 2,000 jobs, well above any company seen on this platform so far
+
+
 def _fetch_career_site_api(company, host, now):
     listings = []
+    # This platform's /api/jobs is NOT reliably sorted by recency (confirmed:
+    # a company with 780 total jobs returned a mix including one from over a
+    # year ago within its first 100 results, with no sort/query param able to
+    # fix the order) — so the only correct approach is to paginate through
+    # every job rather than trust the first page covers the 24h window.
+    all_jobs = []
     try:
-        response = requests.get(
-            CAREER_SITE_API_URL_TEMPLATE.format(host=host),
-            timeout=15,
-        )
-        response.raise_for_status()
-        payload = response.json()
+        offset = 0
+        for _ in range(CAREER_SITE_API_MAX_PAGES):
+            response = requests.get(
+                CAREER_SITE_API_URL_TEMPLATE.format(host=host) + f"&offset={offset}",
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            page_jobs = payload.get("jobs", [])
+            all_jobs.extend(page_jobs)
+            total_count = payload.get("totalCount", len(all_jobs))
+            offset += len(page_jobs)
+            if not page_jobs or offset >= total_count:
+                break
     except Exception as error:
         print(f"🔴 Error fetching career-site-api board for {company} ({host}): {error}")
         return listings
 
-    # Results come back sorted newest-first; the top 100 comfortably covers
-    # the 24h window for every company observed on this platform so far.
-    for job in payload.get("jobs", []):
+    for job in all_jobs:
         try:
             data = job.get("data", {})
             title = data.get("title", "")
